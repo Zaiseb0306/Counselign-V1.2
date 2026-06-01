@@ -11,6 +11,70 @@ use App\Controllers\BaseController;
 class Profile extends BaseController
 {
     /**
+     * Resolve business user_id (e.g. COUN-2025-xxxx) from session.
+     */
+    private function resolveCounselorUserId(): ?string
+    {
+        $session = session();
+        $userId = $session->get('user_id_display');
+        if (!empty($userId)) {
+            return $userId;
+        }
+
+        $numericId = $session->get('user_id');
+        if (empty($numericId)) {
+            return null;
+        }
+
+        $user = (new UserModel())->find($numericId);
+        return $user['user_id'] ?? null;
+    }
+
+    private function ensureCounselorAccess(): ?\CodeIgniter\HTTP\ResponseInterface
+    {
+        $session = session();
+        if (!$session->get('logged_in') || $session->get('role') !== 'counselor') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized access',
+            ])->setStatusCode(403);
+        }
+
+        return null;
+    }
+
+    private function normalizeProfilePictureUrl(?string $path): string
+    {
+        if (empty($path)) {
+            return base_url('Photos/profile.png');
+        }
+        if (strpos($path, 'http') === 0) {
+            return $path;
+        }
+
+        return base_url('/' . ltrim($path, '/'));
+    }
+
+    private function emailExistsForAnotherAccount(string $email, string $userId): bool
+    {
+        $db = \Config\Database::connect();
+
+        if ($db->table('users')->where('email', $email)->where('user_id !=', $userId)->countAllResults(false) > 0) {
+            return true;
+        }
+
+        $counselorFields = $db->getFieldNames('counselors');
+        if (in_array('email', $counselorFields, true)) {
+            return $db->table('counselors')
+                ->where('email', $email)
+                ->where('counselor_id !=', $userId)
+                ->countAllResults(false) > 0;
+        }
+
+        return false;
+    }
+
+    /**
      * Get counselor profile data for sidebar/dashboard
      * Compatible with universal sidebar.js
      */
@@ -109,13 +173,11 @@ class Profile extends BaseController
      */
     public function getProfile()
     {
-        $session = session();
-
-        if (!$session->get('logged_in')) {
-            return $this->response->setJSON(['success' => false, 'message' => 'User not logged in'])->setStatusCode(401);
+        if ($denied = $this->ensureCounselorAccess()) {
+            return $denied;
         }
 
-        $user_id = $session->get('user_id_display') ?? $session->get('user_id');
+        $user_id = $this->resolveCounselorUserId();
         if (!$user_id) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid session data'])->setStatusCode(400);
         }
@@ -124,51 +186,51 @@ class Profile extends BaseController
         $user = $userModel->where('user_id', $user_id)->first();
 
         if ($user) {
-            // Fetch counselor details if exists
             $db = \Config\Database::connect();
             $counselor = $db->table('counselors')->where('counselor_id', $user['user_id'])->get()->getRowArray();
+
+            $displayName = '';
+            if ($counselor && !empty($counselor['name']) && $counselor['name'] !== 'N/A') {
+                $displayName = $counselor['name'];
+            }
+
             return $this->response->setJSON([
                 'success' => true,
                 'user_id' => $user['user_id'],
                 'username' => $user['username'] ?? '',
                 'email' => $user['email'],
+                'name' => $displayName,
+                'full_name' => $displayName,
                 'role' => $user['role'],
                 'last_login' => $user['last_login'] ?? null,
-                'profile_picture' => $user['profile_picture'] ?? null,
-                'counselor' => $counselor
+                'profile_picture' => $this->normalizeProfilePictureUrl($user['profile_picture'] ?? null),
+                'counselor' => $counselor,
             ]);
-        } else {
-            return $this->response->setJSON(['success' => false, 'message' => 'User not found'])->setStatusCode(404);
         }
+
+        return $this->response->setJSON(['success' => false, 'message' => 'User not found'])->setStatusCode(404);
     }
 
     public function profile()
     {
-        // Debug session data
-        $session = session();
-        $loggedIn = $session->get('logged_in');
-        $role = $session->get('role');
-        $userId = $session->get('user_id');
-        
-        // Log session data for debugging
-        log_message('debug', 'Counselor Profile - Session check: logged_in=' . ($loggedIn ? 'true' : 'false') . ', role=' . $role . ', user_id=' . $userId);
-        
+        if (!session()->get('logged_in') || session()->get('role') !== 'counselor') {
+            return redirect()->to('/');
+        }
+
         return view('counselor/counselor_profile');
     }
 
     public function updatePersonalInfo()
     {
-        $session = session();
-        // Allow OPTIONS preflight
         if (strtolower($this->request->getMethod()) === 'options') {
             return $this->response->setJSON(['success' => true]);
         }
 
-        if (empty($session->get('logged_in'))) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized access'])->setStatusCode(403);
+        if ($denied = $this->ensureCounselorAccess()) {
+            return $denied;
         }
 
-        $userId = $session->get('user_id_display') ?? $session->get('user_id');
+        $userId = $this->resolveCounselorUserId();
         if (!$userId) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid session data'])->setStatusCode(400);
         }
@@ -194,18 +256,8 @@ class Profile extends BaseController
             $validationErrors[] = 'Invalid email format';
         }
         
-        // Check for duplicate email if email is being changed
-        if (!empty($post['email']) && $post['email'] !== 'N/A') {
-            $db = \Config\Database::connect();
-            $existingCounselor = $db->table('counselors')
-                ->where('email', $post['email'])
-                ->where('counselor_id !=', $userId)
-                ->get()
-                ->getRowArray();
-            
-            if ($existingCounselor) {
-                $validationErrors[] = 'This email is already registered to another counselor';
-            }
+        if (!empty($post['email']) && $post['email'] !== 'N/A' && $this->emailExistsForAnotherAccount($post['email'], $userId)) {
+            $validationErrors[] = 'This email is already registered to another account';
         }
         
         // Date validation for birthdate
@@ -232,7 +284,6 @@ class Profile extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $builder = $db->table('counselors');
 
         // Filter to existing columns to avoid SQL errors and handle default values
         $fieldNames = $db->getFieldNames('counselors');
@@ -246,29 +297,28 @@ class Profile extends BaseController
             }
         }
 
-        // Upsert counselor row by counselor_id with proper error handling
         try {
-            $exists = $builder->where('counselor_id', $userId)->countAllResults() > 0;
-            $data['counselor_id'] = $userId;
-            
+            $exists = $db->table('counselors')->where('counselor_id', $userId)->countAllResults(false) > 0;
+
             if ($exists) {
-                $result = $builder->where('counselor_id', $userId)->update($data);
+                $db->table('counselors')->where('counselor_id', $userId)->update($data);
                 log_message('debug', 'Counselor personal info updated for user: ' . $userId);
             } else {
-                $result = $builder->insert($data);
+                $data['counselor_id'] = $userId;
+                $db->table('counselors')->insert($data);
                 log_message('debug', 'Counselor personal info inserted for user: ' . $userId);
             }
-            
-            if (!$result) {
-                log_message('error', 'Failed to save counselor personal info for user: ' . $userId);
-                return $this->response->setJSON([
-                    'success' => false, 
-                    'message' => 'Failed to save personal information. Please try again.'
-                ]);
+
+            if (!empty($incoming['email']) && $incoming['email'] !== 'N/A' && in_array('email', $fieldNames, true)) {
+                $userModel = new UserModel();
+                $user = $userModel->where('user_id', $userId)->first();
+                if ($user) {
+                    $userModel->skipValidation(true)->update($user['id'], ['email' => $incoming['email']]);
+                    session()->set('email', $incoming['email']);
+                }
             }
-            
+
             return $this->response->setJSON(['success' => true]);
-            
         } catch (\Exception $e) {
             log_message('error', 'Counselor personal info save error: ' . $e->getMessage());
             return $this->response->setJSON([
@@ -280,64 +330,125 @@ class Profile extends BaseController
 
     public function updateProfile()
     {
-        $session = session();
-        $request = $this->request;
-
-        if (!$session->get('logged_in')) {
-            return $this->response->setJSON(['success' => false, 'message' => 'User not logged in'])->setStatusCode(401);
+        if ($denied = $this->ensureCounselorAccess()) {
+            return $denied;
         }
 
-        $user_id = $session->get('user_id_display') ?? $session->get('user_id');
+        $user_id = $this->resolveCounselorUserId();
         if (!$user_id) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid session data'])->setStatusCode(400);
         }
 
-        $username = $request->getPost('username');
-        $email = $request->getPost('email');
+        $field = $this->request->getPost('field');
+        if ($field !== null && $field !== '') {
+            return $this->updateAccountField($user_id, $field, trim((string) $this->request->getPost('value')));
+        }
 
-        // Validate
-        if (empty($username) || empty($email)) {
+        $username = trim((string) $this->request->getPost('username'));
+        $email = trim((string) $this->request->getPost('email'));
+
+        if ($username === '' || $email === '') {
             return $this->response->setJSON(['success' => false, 'message' => 'All fields are required']);
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid email format']);
         }
 
-        $userModel = new \App\Models\UserModel();
+        $userModel = new UserModel();
         try {
-            $data = [
-                'username' => $username,
-                'email' => $email
-            ];
-            // Find the user by user_id
             $user = $userModel->where('user_id', $user_id)->first();
-            if ($user) {
-                // Check if email is being changed and if it already exists
-                if ($user['email'] !== $email) {
-                    $existingUser = $userModel->where('email', $email)->first();
-                    if ($existingUser) {
-                        return $this->response->setJSON(['success' => false, 'message' => 'This email is already registered to another account']);
-                    }
-                }
-
-                // Use skipValidation to avoid unique email check since we manually checked above
-                $userModel->skipValidation(true)->update($user['id'], $data);
-                
-                // Update last_activity for profile update
-                $activityHelper = new UserActivityHelper();
-                $activityHelper->updateCounselorActivity($user_id, 'update_profile');
-                // Update session data
-                $session->set('username', $username);
-                $session->set('email', $email);
-
-                $affectedRows = $userModel->db->affectedRows();
-                log_message('debug', 'Rows updated: ' . $affectedRows);
-
-                return $this->response->setJSON(['success' => true]);
-            } else {
+            if (!$user) {
                 return $this->response->setJSON(['success' => false, 'message' => 'User not found']);
             }
+
+            if ($user['email'] !== $email && $this->emailExistsForAnotherAccount($email, $user_id)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'This email is already registered to another account',
+                ]);
+            }
+
+            $userModel->skipValidation(true)->update($user['id'], [
+                'username' => $username,
+                'email' => $email,
+            ]);
+
+            $db = \Config\Database::connect();
+            $counselorFields = $db->getFieldNames('counselors');
+            if (in_array('email', $counselorFields, true)) {
+                $counselorRow = $db->table('counselors')->where('counselor_id', $user_id)->get()->getRowArray();
+                if ($counselorRow) {
+                    $db->table('counselors')->where('counselor_id', $user_id)->update(['email' => $email]);
+                }
+            }
+
+            $activityHelper = new UserActivityHelper();
+            $activityHelper->updateCounselorActivity($user_id, 'update_profile');
+
+            session()->set('username', $username);
+            session()->set('email', $email);
+
+            return $this->response->setJSON(['success' => true]);
         } catch (\Exception $e) {
+            log_message('error', 'Counselor updateProfile error: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Database error occurred']);
+        }
+    }
+
+    /**
+     * Single-field update (admin account-settings style).
+     */
+    private function updateAccountField(string $userId, string $field, string $value)
+    {
+        $allowed = ['username', 'email'];
+        if (!in_array($field, $allowed, true)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid field'])->setStatusCode(400);
+        }
+        if ($value === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Value is required']);
+        }
+        if ($field === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid email format']);
+        }
+
+        $userModel = new UserModel();
+        try {
+            $user = $userModel->where('user_id', $userId)->first();
+            if (!$user) {
+                return $this->response->setJSON(['success' => false, 'message' => 'User not found']);
+            }
+
+            if ($field === 'email' && $user['email'] !== $value && $this->emailExistsForAnotherAccount($value, $userId)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'This email is already registered to another account',
+                ]);
+            }
+
+            $userModel->skipValidation(true)->update($user['id'], [$field => $value]);
+
+            if ($field === 'email') {
+                $db = \Config\Database::connect();
+                $counselorFields = $db->getFieldNames('counselors');
+                if (in_array('email', $counselorFields, true)) {
+                    $counselorRow = $db->table('counselors')->where('counselor_id', $userId)->get()->getRowArray();
+                    if ($counselorRow) {
+                        $db->table('counselors')->where('counselor_id', $userId)->update(['email' => $value]);
+                    }
+                }
+            }
+
+            $activityHelper = new UserActivityHelper();
+            $activityHelper->updateCounselorActivity($userId, 'update_profile');
+
+            session()->set($field, $value);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => ucfirst($field) . ' updated successfully',
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Counselor updateAccountField error: ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'Database error occurred']);
         }
     }
@@ -359,7 +470,7 @@ class Profile extends BaseController
         }
 
         try {
-            $userId = $session->get('user_id_display') ?? $session->get('user_id');
+            $userId = $this->resolveCounselorUserId();
             if (!$userId) {
                 return $this->response->setJSON(['success' => false, 'message' => 'Invalid session data'])->setStatusCode(400);
             }
@@ -419,7 +530,11 @@ class Profile extends BaseController
                 // Non-fatal: ignore if table/column doesn't exist
             }
 
-            return $this->response->setJSON(['success' => true, 'picture_url' => $relativePath]);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Profile picture updated successfully',
+                'picture_url' => $relativePath,
+            ]);
         } catch (\Throwable $e) {
             log_message('error', 'Counselor picture upload error: ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'Server error uploading file']);

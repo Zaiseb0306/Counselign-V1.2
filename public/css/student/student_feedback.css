@@ -260,3 +260,114 @@
 .text-danger {
     color: #dc3545 !important;
 }
+
+/* ===== Vibe coding header sync (same as other student pages) ===== */
+:root {
+    --appt-navy: #060E57;
+    --appt-navy-soft: #0a1a7a;
+    --appt-surface: #ffffff;
+    --appt-muted: #64748b;
+    --appt-border: rgba(6, 14, 87, 0.08);
+    --appt-glow: rgba(6, 14, 87, 0.12);
+    --appt-radius: 14px;
+    --appt-radius-sm: 10px;
+    --appt-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+body.fb-page-body {
+    background-color: #eef1f8 !important;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(6, 14, 87, 0.07), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 110, 253, 0.06), transparent),
+        linear-gradient(180deg, #f4f6fc 0%, #eef1f8 100%) !important;
+    font-family: var(--appt-font) !important;
+}
+
+.fb-page-body .top-bar {
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+    border-radius: var(--appt-radius);
+    box-shadow: 0 4px 24px var(--appt-glow);
+    margin: 1.1rem 1.2rem 0.75rem;
+    padding: 0.95rem 1.1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.fb-page-body .top-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--appt-navy), #3b82f6, #8b5cf6);
+}
+
+.fb-page-body .page-title-header {
+    color: var(--appt-navy);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: transparent !important;
+    box-shadow: none !important;
+    clip-path: none !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+    font-size: 1.35rem !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.fb-page-body .page-title-header i {
+    color: #fff !important;
+    margin-right: 0 !important;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--appt-navy), #3b82f6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem !important;
+    box-shadow: 0 4px 12px rgba(6, 14, 87, 0.2);
+}
+
+.fb-page-body .top-bar-right {
+    gap: 0.65rem;
+}
+
+.fb-page-body .top-bar-btn {
+    background: var(--appt-surface);
+    color: var(--appt-navy);
+    border: 1px solid var(--appt-border);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(6, 14, 87, 0.1);
+}
+
+.fb-page-body .top-bar-btn i {
+    color: var(--appt-navy);
+}
+
+.fb-page-body .top-bar-btn:hover {
+    transform: translateY(-1px);
+    background: #f8fafc;
+    box-shadow: 0 8px 18px rgba(6, 14, 87, 0.14);
+}
+
+.fb-page-body .profile-btn {
+    width: 44px !important;
+    height: 44px !important;
+}
+
+.fb-page-body .profile-btn .profile-img-small {
+    width: 44px;
+    height: 44px;
+    border: 2px solid rgba(6, 14, 87, 0.12);
+    box-shadow: 0 4px 14px rgba(6, 14, 87, 0.18);
+}
+
+/* Let profile dropdown escape the top bar */
+.fb-page-body .top-bar {
+    overflow: visible;
+}

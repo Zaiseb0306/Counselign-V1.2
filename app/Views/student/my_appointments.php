@@ -11,16 +11,23 @@
     <title>My Appointments - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign_logo.png') ?>" sizes="16x16 32x32" type="image/png">
     <link rel="shortcut icon" href="<?= base_url('Photos/counselign_logo.png') ?>" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?= base_url('css/student/my_appointments.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/my_appointments.css?v=3') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_vibe_shared.css?v=1') ?>">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+
     <link rel="stylesheet" href="<?= base_url('css/utils/customCalendarPicker.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
 
 </head>
 
-<body>
+<body class="ma-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -85,6 +92,8 @@
                     <i class="fas fa-plus-circle text-2xl" style="cursor: pointer;"></i>
                     <span class="btn-label">Schedule an Appointment</span>
                 </button>
+
+                <?= view('student/partials/header_actions') ?>
 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
@@ -515,12 +524,14 @@
     <!-- Scripts -->
     <?php echo view('modals/student_dashboard_modals'); ?>
     <script src="<?= base_url('js/modals/student_dashboard_modals.js') ?>"></script>
+    <?= view('student/partials/notifications_dropdown') ?>
     <script src="<?= base_url('js/utils/timeFormatter.js') ?>"></script>
     <script src="<?= base_url('js/utils/customCalendarPicker.js') ?>"></script>
     <script src="<?= base_url('js/student/my_appointments.js') ?>"></script>
     <script src="<?= base_url('js/student/logout.js') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
     <script src="<?= base_url('js/student/student_header_drawer.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js?v=3') ?>"></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>

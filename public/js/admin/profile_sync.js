@@ -2,7 +2,11 @@
 function fetchAdminData() {
     return fetch((window.BASE_URL || '/') + 'admin/dashboard/data', {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
     .then(response => response.json())
     .then(data => {
@@ -80,10 +84,7 @@ window.addEventListener('storage', (event) => {
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     SecureLogger.info('DOM loaded, initializing profile sync...');
-    
-    // Initial update
+
     updateAdminProfilePictures();
-    
-    // Set up periodic updates
-    setInterval(forceReloadProfilePictures, 30000); // Check every 30 seconds
+    setInterval(forceReloadProfilePictures, 30000);
 }); 

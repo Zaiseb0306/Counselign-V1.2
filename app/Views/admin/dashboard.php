@@ -11,17 +11,15 @@
     <title>Counselign</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" type="image/x-icon">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/admin/admin_dashboard.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/admin/view_all_appointments.css') ?>">
-
-    <style>
-
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('css/counselor/view_all_appointments.css?v=9') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/admin/admin_reports_counselor_theme.css?v=2') ?>">
+    <?= view('admin/partials/vibe_styles') ?>
 </head>
 
-<body>
+<body class="adm-dash-page-body va-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -44,6 +42,14 @@
                 <a href="<?= base_url('admin/appointments') ?>" class="sidebar-link" title="Recent Appointments">
                     <i class="fas fa-calendar-check"></i>
                     <span class="sidebar-text">Recent Appointments</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-questions') ?>" class="sidebar-link" title="Feedback Questions">
+                    <i class="fas fa-question-circle"></i>
+                    <span class="sidebar-text">Feedback Questions</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-analytics/view-feedback') ?>" class="sidebar-link" title="View Feedback">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-text">View Feedback</span>
                 </a>
                 <a href="<?= base_url('admin/follow-up-sessions') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-calendar-days"></i>
@@ -117,16 +123,15 @@
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Migrated main content from admin/view_all_appointments -->
-            <div class="container report-container">
-                <div class="page-header" hidden>
-                    <p class="text-muted">View and analyze appointment statistics</p>
+        <main class="appt-page va-page">
+            <div class="main-content">
+            <div class="container-fluid px-4 va-container report-container">
+
+                <div class="adm-reports-legacy-header" aria-hidden="true">
+                    <span id="adminName">Loading...</span>
                 </div>
 
-                <!-- Filter Section -->
-                <div class="filter-section">
+                <section class="rpt-panel filter-section">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-8">
                             <div class="input-group">
@@ -140,23 +145,18 @@
                         </div>
                         <div class="col-md-4">
                             <a href="<?= base_url('admin/history-reports') ?>" class="btn btn-secondary w-100">
-                                <i class="fas fa-history"></i><span class="btn-text"> View Past Reports</span>
+                                <i class="fas fa-history"></i> View Past Reports
                             </a>
                         </div>
                     </div>
-                    <div class="mt-3 d-flex align-items-center gap-2">
-                        <span id="flaskStatusBadge" class="badge rounded-pill bg-secondary">Middleware</span>
-                        <span id="flaskStatusText" class="small text-muted">Checking Flask middleware...</span>
-                    </div>
-                </div>
+                </section>
 
-                <!-- History Modal -->
-                <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+                <div class="modal fade appt-vibe-modal" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
+                        <div class="modal-content appointment-modal-content">
+                            <div class="modal-header appointment-modal-header">
                                 <h5 class="modal-title" id="historyModalLabel">Report History</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="table-responsive">
@@ -180,191 +180,157 @@
                     </div>
                 </div>
 
-                <!-- Statistics Summary -->
-                <div class="row stats-summary">
-                    <div class="col-md-2">
-                        <div class="stat-card completed">
-                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                            <div class="stat-details">
-                                <h3 id="completedCount">0</h3>
-                                <p>Completed</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-card approved">
-                            <div class="stat-icon"><i class="fas fa-thumbs-up"></i></div>
-                            <div class="stat-details">
-                                <h3 id="approvedCount">0</h3>
-                                <p>Approved</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-card rescheduled">
-                            <div class="stat-icon bg-warning text-white rounded-circle"><i class="fas fa-calendar-alt"></i></div>
-                            <div class="stat-details">
-                                <h3 id="rescheduledCount">0</h3>
-                                <p>Rescheduled</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-card pending">
-                            <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                            <div class="stat-details">
-                                <h3 id="pendingCount">0</h3>
-                                <p>Pending</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-card feedback-pending">
-                            <div class="stat-icon bg-info text-white rounded-circle"><i class="fas fa-star"></i></div>
-                            <div class="stat-details">
-                                <h3 id="feedbackPendingCount">0</h3>
-                                <p>Feedback Pending</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <section class="stats-summary va-stats" aria-label="Appointment statistics">
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-check-circle text-primary"></i></div>
+                        <div class="stat-details"><h3 id="completedCount">0</h3><p>Completed</p></div>
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-thumbs-up text-success"></i></div>
+                        <div class="stat-details"><h3 id="approvedCount">0</h3><p>Approved</p></div>
+                    </article>
+                    <article class="stat-card rescheduled">
+                        <div class="stat-icon"><i class="fas fa-calendar-alt text-warning"></i></div>
+                        <div class="stat-details"><h3 id="rescheduledCount">0</h3><p>Rescheduled</p></div>
+                    </article>
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-clock text-danger"></i></div>
+                        <div class="stat-details"><h3 id="pendingCount">0</h3><p>Pending</p></div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-star text-secondary"></i></div>
+                        <div class="stat-details"><h3 id="feedbackPendingCount">0</h3><p>InProgress</p></div>
+                    </article>
+                </section>
 
                 <!-- Charts -->
-                <div class="row charts-section">
+                <section class="rpt-panel">
+                <div class="row charts-section g-4">
                     <div class="col-md-8">
-                        <div class="chart-container trend-chart shadow rounded p-4 bg-white">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4 class="m-0">
-                                    <i class="fas fa-chart-line text-primary"></i>
-                                    <span class="ms-2 fw-bold">Appointment Trends</span>
-                                </h4>
-                            </div>
-                            <div class="chart-wrapper" style="height: 400px;">
+                        <div class="chart-container trend-chart rpt-chart-card">
+                            <header class="rpt-chart-head">
+                                <span class="rpt-chart-icon" aria-hidden="true"><i class="fas fa-chart-bar"></i></span>
+                                <div class="rpt-chart-titles">
+                                    <h4>Appointment Trends</h4>
+                                    <p class="rpt-chart-subtitle" id="trendChartSubtitle">Loading trends…</p>
+                                    <p class="rpt-chart-hint" id="trendChartHint">Each bar shows appointments by status for that time period.</p>
+                                </div>
+                            </header>
+                            <p class="rpt-chart-empty" id="trendChartEmpty" style="display:none;"><i class="fas fa-chart-bar me-2"></i>No appointment data for this period.</p>
+                            <div class="chart-wrapper">
                                 <canvas id="appointmentTrendChart"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="chart-container pie-chart">
-                            <h4><i class="fas fa-chart-pie"></i> Status Distribution</h4>
-                            <canvas id="statusPieChart"></canvas>
+                        <div class="chart-container pie-chart rpt-chart-card">
+                            <header class="rpt-chart-head">
+                                <span class="rpt-chart-icon rpt-chart-icon--pie" aria-hidden="true"><i class="fas fa-bars-staggered"></i></span>
+                                <div class="rpt-chart-titles">
+                                    <h4>Status Breakdown</h4>
+                                    <p class="rpt-chart-subtitle">Count by appointment status</p>
+                                </div>
+                            </header>
+                            <div class="chart-wrapper chart-wrapper--status">
+                                <canvas id="statusPieChart"></canvas>
+                            </div>
+                            <div class="rpt-status-breakdown" id="statusChartBreakdown" aria-live="polite"></div>
                         </div>
                     </div>
                 </div>
+                </section>
 
-                <div class="container mt-1">
-                    <div class="appointment-container">
-                        <div class="row mb-2">
-                            <div class="col-12">
-                                <h2 class="text-center fw-bold" style="color: #0d6efd;">All Appointment Lists</h2>
-                            </div>
+                <section class="appointment-container rpt-panel va-appointments-panel">
+                    <header class="va-panel-header rpt-panel-header">
+                        <div class="va-panel-header-text">
+                            <h2 class="rpt-section-title mb-0">
+                                <i class="fas fa-table-list me-2"></i>
+                                List of All Your Appointments
+                            </h2>
+                            <p class="va-panel-sub mb-0">Filter by status, search students, and export reports</p>
                         </div>
+                    </header>
 
                         <!-- Navigation Tabs -->
-                        <ul class="nav nav-tabs mb-4" id="appointmentTabs" role="tablist">
-                            <li class="nav-item col-md-2" role="presentation">
-                                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all"
-                                    type="button">
-                                    <i class="fas fa-list"></i><span class="tab-text"> All Appointments</span>
+                        <ul class="nav nav-tabs rpt-appt-tabs mb-3" id="appointmentTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button">
+                                    <i class="fas fa-list-alt"></i>
+                                    <span class="tab-text">All Appointments</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="followup-tab" data-bs-toggle="tab" data-bs-target="#followup"
-                                    type="button">
-                                    <i class="fas fa-calendar-plus"></i><span class="tab-text"> Follow-up</span>
+                                <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button">
+                                    <i class="fas fa-clock"></i>
+                                    <span class="tab-text">Pending</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved"
-                                    type="button">
-                                    <i class="fas fa-thumbs-up"></i><span class="tab-text"> Approved</span>
+                                <button class="nav-link" id="followup-tab" data-bs-toggle="tab" data-bs-target="#followup" type="button">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    <span class="tab-text">Follow-up</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="rescheduled-tab" data-bs-toggle="tab" data-bs-target="#rescheduled"
-                                    type="button">
-                                    <i class="fas fa-calendar-alt"></i><span class="tab-text"> Rescheduled</span>
+                                <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span class="tab-text">Approved</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed"
-                                    type="button">
-                                    <i class="fas fa-check-circle"></i><span class="tab-text"> Completed</span>
+                                <button class="nav-link" id="rescheduled-tab" data-bs-toggle="tab" data-bs-target="#rescheduled" type="button">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span class="tab-text">Rescheduled</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="feedback-pending-tab" data-bs-toggle="tab" data-bs-target="#feedback-pending"
-                                    type="button">
-                                    <i class="fas fa-star"></i><span class="tab-text"> Feedback Pending</span>
+                                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button">
+                                    <i class="fas fa-check-double"></i>
+                                    <span class="tab-text">Completed</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="feedback-pending-tab" data-bs-toggle="tab" data-bs-target="#feedback-pending" type="button">
+                                    <i class="fas fa-star"></i>
+                                    <span class="tab-text">InProgress</span>
                                 </button>
                             </li>
                         </ul>
 
-                        <!-- Filter Options -->
-                        <div class="row mb-4 appointment-filters">
-                            <!-- Filter Line 1: Search and Date (Mobile/Tablet) -->
-                            <div class="filter-line-1 d-lg-none">
-                                <div class="col-mobile">
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                        <input type="text" class="form-control" id="searchInputMobile" placeholder="Search appointments...">
-                                    </div>
-                                </div>
-                                <div class="col-mobile">
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                        <input type="month" class="form-control" id="dateFilterMobile">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Filter Line 2: Export buttons (Mobile/Tablet) -->
-                            <div class="filter-line-2 d-lg-none">
-                                <div class="col-mobile">
-                                    <div class="btn-group w-100">
-                                        <button class="btn btn-primary" id="exportPDFMobile">
-                                            <i class="fas fa-file-pdf me-2"></i>Export PDF
-                                        </button>
-                                        <button class="btn btn-success" id="exportExcelMobile">
-                                            <i class="fas fa-file-excel me-2"></i>Export Excel
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Desktop Layout (Original) -->
-                            <div class="col-md-4 d-none d-lg-block">
-                                <div class="input-group">
+                    <div class="rpt-toolbar va-toolbar">
+                            <div class="rpt-toolbar-field">
+                                <label class="rpt-toolbar-label" for="searchInput">Search</label>
+                                <div class="input-group rpt-input-group">
                                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                                     <input type="text" class="form-control" id="searchInput" placeholder="Search appointments...">
                                 </div>
                             </div>
-                            <div class="col-md-4 d-none d-lg-block">
-                                <div class="input-group">
+                            <div class="rpt-toolbar-field">
+                                <label class="rpt-toolbar-label" for="dateFilter">Filter by month</label>
+                                <div class="input-group rpt-input-group">
                                     <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                     <input type="month" class="form-control" id="dateFilter">
                                 </div>
                             </div>
-                            <div class="col-md-4 d-none d-lg-block">
-                                <div class="btn-group w-100">
-                                    <button class="btn btn-primary" id="exportPDF">
-                                        <i class="fas fa-file-pdf me-2"></i>Export PDF
-                                    </button>
-                                    <button class="btn btn-success" id="exportExcel">
-                                        <i class="fas fa-file-excel me-2"></i>Export Excel
-                                    </button>
-                                </div>
+                            <div class="rpt-toolbar-actions">
+                                <button type="button" class="rpt-btn-export rpt-btn-pdf" id="exportPDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span>Export PDF</span>
+                                </button>
+                                <button type="button" class="rpt-btn-export rpt-btn-excel" id="exportExcel">
+                                    <i class="fas fa-file-excel"></i>
+                                    <span>Export Excel</span>
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Enhanced Export Filters Modal -->
-                        <div class="modal fade" id="exportFiltersModal" tabindex="-1" aria-labelledby="exportFiltersModalLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="exportFiltersModalLabel"><i class="fas fa-filter me-2"></i>Export Filters</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
+                    <div class="modal fade appt-vibe-modal" id="exportFiltersModal" tabindex="-1" aria-labelledby="exportFiltersModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content appointment-modal-content">
+                                <div class="modal-header appointment-modal-header">
+                                    <h5 class="modal-title" id="exportFiltersModalLabel"><i class="fas fa-filter me-2"></i>Export Filters</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
                                     <div class="modal-body">
                                         <!-- Date Range Filters -->
                                         <div class="row g-3 mb-4">
@@ -444,28 +410,25 @@
                             </div>
                         </div>
 
-                        <!-- Tab Content with Scrollable Container -->
-                        <div class="tab-content" id="appointmentTabContent">
-                            <!-- Loading Spinner -->
-                            <div class="loading-spinner" style="display: none;">
-                                <div class="d-flex justify-content-center align-items-center">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
+                    <div class="tab-content" id="appointmentTabContent">
+                        <div class="loading-spinner appt-state appt-loading" style="display: none;">
+                            <div class="appt-loader" role="status" aria-label="Loading appointments">
+                                <span></span><span></span><span></span>
                             </div>
+                            <p>Loading appointments...</p>
+                        </div>
 
-                            <!-- Empty State Message -->
-                            <div class="empty-state alert alert-info text-center" style="display: none;">
-                                <i class="fas fa-info-circle me-2"></i>
-                                No appointments found.
-                            </div>
+                        <div class="empty-state appt-empty alert alert-info text-center" style="display: none;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No appointments found.
+                        </div>
 
                              <!-- All Appointments Tab -->
                              <div class="tab-pane fade show active" id="all" role="tabpanel">
-                                 <div class="table-responsive" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
-                                     <table class="table table-hover mb-0" style="min-width: 1250px;">
-                                         <thead class="table-light sticky-top">
+                                 <div class="rpt-table-shell">
+                                 <div class="rpt-table-scroll">
+                                     <table class="table table-hover mb-0 rpt-table va-appt-table rpt-has-reason">
+                                         <thead class="rpt-table-head">
                                              <tr>
                                                  <th>User ID</th>
                                                  <th>Full Name</th>
@@ -482,20 +445,52 @@
                                                  <th>Mean</th>
                                                  <th>Interpretation</th>
                                                  <th>Status</th>
-                                                 <th style="width: 60%;">Reason for Status</th>
+                                                 <th class="rpt-col-reason">Reason for Status</th>
                                              </tr>
                                          </thead>
-                                         <tbody id="allAppointmentsTable">
-                                         </tbody>
+                                         <tbody id="allAppointmentsTable"></tbody>
                                      </table>
                                  </div>
-                             </div>
+                                 </div>
+                              </div>
 
-                             <!-- Approved Appointments Tab -->
-                             <div class="tab-pane fade" id="approved" role="tabpanel">
-                                 <div class="table-responsive" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
-                                     <table class="table table-hover mb-0" style="min-width: 1250px;">
-                                         <thead class="table-light sticky-top">
+                              <!-- Pending Appointments Tab -->
+                              <div class="tab-pane fade" id="pending" role="tabpanel">
+                                  <div class="rpt-table-shell">
+                                  <div class="rpt-table-scroll">
+                                      <table class="table table-hover mb-0 rpt-table va-appt-table rpt-has-reason">
+                                          <thead class="rpt-table-head">
+                                              <tr>
+                                                  <th>User ID</th>
+                                                  <th>Full Name</th>
+                                                  <th>Date</th>
+                                                  <th>Time</th>
+                                                  <th>Method Type</th>
+                                                  <th>Consultation Type</th>
+                                                  <th>Session Type</th>
+                                                  <th>Purpose</th>
+                                                  <th>Student Concern</th>
+                                                  <th>Counselor Remarks</th>
+                                                  <th>Counselor</th>
+                                                  <th>Student Feedbacks</th>
+                                                  <th>Mean</th>
+                                                  <th>Interpretation</th>
+                                                  <th>Status</th>
+                                                  <th class="rpt-col-reason">Reason for Status</th>
+                                              </tr>
+                                          </thead>
+                                          <tbody id="pendingAppointmentsTable"></tbody>
+                                      </table>
+                                  </div>
+                                  </div>
+                              </div>
+
+                              <!-- Approved Appointments Tab -->
+                              <div class="tab-pane fade" id="approved" role="tabpanel">
+                                 <div class="rpt-table-shell">
+                                 <div class="rpt-table-scroll">
+                                     <table class="table table-hover mb-0 rpt-table va-appt-table">
+                                         <thead class="rpt-table-head">
                                              <tr>
                                                  <th>User ID</th>
                                                  <th>Full Name</th>
@@ -514,17 +509,18 @@
                                                  <th>Status</th>
                                              </tr>
                                          </thead>
-                                         <tbody id="approvedAppointmentsTable">
-                                         </tbody>
+                                         <tbody id="approvedAppointmentsTable"></tbody>
                                      </table>
+                                 </div>
                                  </div>
                              </div>
 
                              <!-- Rescheduled Appointments Tab -->
                              <div class="tab-pane fade" id="rescheduled" role="tabpanel">
-                                 <div class="table-responsive" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
-                                     <table class="table table-hover mb-0" style="min-width: 1250px;">
-                                         <thead class="table-light sticky-top">
+                                 <div class="rpt-table-shell">
+                                 <div class="rpt-table-scroll">
+                                     <table class="table table-hover mb-0 rpt-table va-appt-table rpt-has-reason">
+                                         <thead class="rpt-table-head">
                                              <tr>
                                                  <th>User ID</th>
                                                  <th>Full Name</th>
@@ -541,20 +537,21 @@
                                                  <th>Mean</th>
                                                  <th>Interpretation</th>
                                                  <th>Status</th>
-                                                 <th style="width: 60%;">Reason for Status</th>
+                                                 <th class="rpt-col-reason">Reason for Status</th>
                                              </tr>
                                          </thead>
-                                         <tbody id="rescheduledAppointmentsTable">
-                                         </tbody>
+                                         <tbody id="rescheduledAppointmentsTable"></tbody>
                                      </table>
+                                 </div>
                                  </div>
                              </div>
 
                              <!-- Completed Appointments Tab -->
                              <div class="tab-pane fade" id="completed" role="tabpanel">
-                                 <div class="table-responsive" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
-                                     <table class="table table-hover mb-0" style="min-width: 1250px;">
-                                         <thead class="table-light sticky-top">
+                                 <div class="rpt-table-shell">
+                                 <div class="rpt-table-scroll">
+                                     <table class="table table-hover mb-0 rpt-table va-appt-table">
+                                         <thead class="rpt-table-head">
                                              <tr>
                                                  <th>User ID</th>
                                                  <th>Full Name</th>
@@ -573,17 +570,18 @@
                                                  <th>Status</th>
                                              </tr>
                                          </thead>
-                                         <tbody id="completedAppointmentsTable">
-                                         </tbody>
+                                         <tbody id="completedAppointmentsTable"></tbody>
                                      </table>
+                                 </div>
                                  </div>
                              </div>
 
                              <!-- Feedback Pending Appointments Tab -->
                              <div class="tab-pane fade" id="feedback-pending" role="tabpanel">
-                                 <div class="table-responsive" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
-                                     <table class="table table-hover mb-0" style="min-width: 1250px;">
-                                         <thead class="table-light sticky-top">
+                                 <div class="rpt-table-shell">
+                                 <div class="rpt-table-scroll">
+                                     <table class="table table-hover mb-0 rpt-table va-appt-table">
+                                         <thead class="rpt-table-head">
                                              <tr>
                                                  <th>User ID</th>
                                                  <th>Full Name</th>
@@ -602,42 +600,42 @@
                                                  <th>Status</th>
                                              </tr>
                                          </thead>
-                                         <tbody id="feedbackPendingAppointmentsTable">
-                                         </tbody>
+                                         <tbody id="feedbackPendingAppointmentsTable"></tbody>
                                      </table>
                                  </div>
-                             </div>
-                             <!-- Follow-up Appointments Tab -->
-                             <div class="tab-pane fade" id="followup" role="tabpanel">
-                                 <div class="table-responsive" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
-                                     <table class="table table-hover mb-0" style="min-width: 1250px;">
-                                         <thead class="table-light sticky-top">
-                                             <tr>
-                                                 <th>User ID</th>
-                                                 <th>Full Name</th>
-                                                 <th>Date</th>
-                                                 <th>Time</th>
-                                                 <th>Method Type</th>
-                                                 <th>Consultation Type</th>
-                                                 <th>Session Type</th>
-                                                 <th>Purpose</th>
-                                                 <th>Student Concern</th>
-                                                 <th>Counselor Remarks</th>
-                                                 <th>Counselor</th>
-                                                 <th>Student Feedbacks</th>
-                                                 <th>Mean</th>
-                                                 <th>Interpretation</th>
-                                                 <th>Status</th>
-                                             </tr>
-                                         </thead>
-                                         <tbody id="followUpAppointmentsTable">
-                                         </tbody>
-                                     </table>
                                  </div>
                              </div>
+                        <div class="tab-pane fade" id="followup" role="tabpanel">
+                            <div class="rpt-table-shell">
+                            <div class="rpt-table-scroll">
+                                <table class="table table-hover mb-0 rpt-table va-appt-table">
+                                    <thead class="rpt-table-head">
+                                        <tr>
+                                            <th>User ID</th>
+                                            <th>Full Name</th>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Method Type</th>
+                                            <th>Consultation Type</th>
+                                            <th>Session Type</th>
+                                            <th>Purpose</th>
+                                            <th>Student Concern</th>
+                                            <th>Counselor Remarks</th>
+                                            <th>Counselor</th>
+                                            <th>Student Feedbacks</th>
+                                            <th>Mean</th>
+                                            <th>Interpretation</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="followUpAppointmentsTable"></tbody>
+                                </table>
+                            </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </section>
+            </div>
             </div>
         </main>
     </div>
@@ -821,23 +819,26 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="<?= base_url('js/shared/appointment_pdf_dashboard.js') ?>?v=4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
         window.FLASK_MIDDLEWARE_URL = "http://localhost:5000";
     </script>
-    <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
+    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/admin/admin_dashboard.js') ?>"></script>
     <script src="<?= base_url('js/admin/profile_sync.js') ?>"></script>
-    <script src="<?= base_url('js/admin/view_all_appointments.js') ?>"></script>
+    <script src="<?= base_url('js/counselor/report_charts_theme.js') ?>?v=3"></script>
+    <script src="<?= base_url('js/shared/report_status_utils.js') ?>?v=1"></script>
+    <script src="<?= base_url('js/admin/view_all_appointments.js') ?>?v=8"></script>
     <script src="<?= base_url('js/modals/student_dashboard_modals.js') ?>"></script>
     <script src="<?= base_url('js/admin/quotes_management.js') ?>"></script>
     <script src="<?= base_url('js/admin/logout.js') ?>" defer></script>
-    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
+    <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
 </body>
 
 </html>

@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Controllers;
+<?php namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\CounselorModel;
@@ -33,18 +31,26 @@ class Auth extends BaseController
             return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid request method']);
         }
 
-        $identifier = trim($this->request->getPost('identifier'));
+        $identifier = trim((string) $this->request->getPost('identifier'));
         $password = $this->request->getPost('password');
 
         if (empty($identifier) || empty($password)) {
             return $this->response->setJSON([
                 'status' => 'error',
-                'message' => 'Please provide both User ID/Email and Password'
+                'message' => 'Please provide both Email and Password'
             ]);
         }
 
         $validation = \Config\Services::validation();
         $validation->setRules([
+            'identifier' => [
+                'label' => 'Email',
+                'rules' => 'required|valid_email',
+                'errors' => [
+                    'required' => 'Email is required',
+                    'valid_email' => 'Please enter a valid email address',
+                ],
+            ],
             'password' => [
                 'label' => 'Password',
                 'rules' => 'required|min_length[8]|regex_match[/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$/]',
@@ -57,6 +63,7 @@ class Auth extends BaseController
         ]);
 
         $_POST['password'] = $password;
+        $_POST['identifier'] = $identifier;
 
         if (!$validation->withRequest($this->request)->run()) {
             return $this->response->setJSON([
@@ -65,20 +72,15 @@ class Auth extends BaseController
             ]);
         }
 
-        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
-
-        if ($isEmail) {
-            $user = $this->userModel->where('email', $identifier)->first();
-        } else {
-            // Accept either 1-10 digit numeric IDs (students) or >=3 alphanumeric IDs (others)
-            if (!preg_match('/^\\d{1,10}$/', $identifier) && !preg_match('/^[a-zA-Z0-9]{3,}$/', $identifier)) {
-                return $this->response->setJSON([
-                    'status' => 'error',
-                    'message' => 'Invalid User ID format'
-                ]);
-            }
-            $user = $this->userModel->where('user_id', $identifier)->first();
+        if (!$this->isAllowedEmail($identifier)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Only gmail.com, yahoo.com, outlook.com, and edu.ph emails are allowed.'
+            ]);
         }
+
+        // Email-only login
+        $user = $this->userModel->where('email', $identifier)->first();
 
         if (!$user || !password_verify($password, $user['password'])) {
             return $this->response->setJSON([
@@ -116,6 +118,8 @@ class Auth extends BaseController
         $activityHelper->updateLastActivity($user['user_id'], 'login');
 
         $session = session();
+        // Forcefully set the role first to prevent conflicts
+        $session->set('role', $user['role']);
         $session->set([
             'user_id' => $user['id'],
             'username' => $user['username'],
@@ -249,6 +253,11 @@ class Auth extends BaseController
         if (!$validation->withRequest($this->request)->run()) {
             $response['message'] = implode(' ', $validation->getErrors());
         } else {
+            if (!$this->isAllowedEmail($email)) {
+                $response['message'] = 'Only gmail.com, yahoo.com, outlook.com, and edu.ph emails are allowed.';
+                return $this->response->setJSON($response);
+            }
+
             $existing = $this->userModel
                 ->where('user_id', $userId)
                 ->orWhere('email', $email)
@@ -314,6 +323,32 @@ class Auth extends BaseController
         return $this->response->setJSON($response);
     }
 
+    private function isAllowedEmail(string $email): bool
+    {
+        $email = trim($email);
+        if ($email === '') return false;
+        if (preg_match('/\\s/', $email)) return false;
+        if (strpos($email, '..') !== false) return false;
+
+        $at = strpos($email, '@');
+        if ($at === false || $at === 0) return false; // no name
+        if (strpos($email, '@', $at + 1) !== false) return false; // multiple @
+
+        $local = substr($email, 0, $at);
+        $domain = strtolower(substr($email, $at + 1));
+
+        if ($local === '' || $domain === '') return false;
+        if ($local[0] === '.' || substr($local, -1) === '.') return false;
+        if (!preg_match('/^[A-Za-z0-9._%+\\-]+$/', $local)) return false;
+        if (strpos($local, '..') !== false) return false;
+
+        $allowed = ['gmail.com', 'yahoo.com', 'outlook.com', 'edu.ph'];
+        if (!in_array($domain, $allowed, true)) return false;
+        if (!preg_match('/^[a-z0-9-]+(\\.[a-z0-9-]+)+$/', $domain)) return false;
+
+        return true;
+    }
+
     public function logout()
     {
         try {
@@ -374,6 +409,8 @@ class Auth extends BaseController
             $response['message'] = 'Account verified successfully. You can now log in.';
 
             $session = session();
+            // Forcefully set the role first to prevent conflicts
+            $session->set('role', $user['role']);
             $session->set([
                 'user_id' => $user['id'],
                 'username' => $user['username'],
@@ -491,93 +528,5 @@ class Auth extends BaseController
             log_message('error', 'PHPMailer ErrorInfo: ' . $mailer->ErrorInfo);
             return false;
         }
-    }
-
-    public function verifyAdmin()
-    {
-        if ($this->request->getMethod() !== 'POST') {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid request method']);
-        }
-
-        $identifier = trim($this->request->getPost('identifier'));
-        $password = trim($this->request->getPost('password'));
-
-        $validation = \Config\Services::validation();
-        $validation->setRules([
-            'identifier' => [
-                'label' => 'Identifier',
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'User ID or Email is required',
-                ],
-            ],
-            'password' => [
-                'label' => 'Password',
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'Password is required',
-                ],
-            ],
-        ]);
-
-        $_POST['identifier'] = $identifier;
-        $_POST['password'] = $password;
-
-        if (!$validation->withRequest($this->request)->run()) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => implode(' ', $validation->getErrors()),
-            ]);
-        }
-
-        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
-
-        if ($isEmail) {
-            $user = $this->userModel->where('email', $identifier)->first();
-        } else {
-            $user = $this->userModel->where('user_id', $identifier)->first();
-        }
-
-        if (!$user || $user['role'] !== 'admin') {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Admin account not found']);
-        }
-
-        if (!password_verify($password, $user['password'])) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid password']);
-        }
-
-        if (!$user['is_verified']) {
-            return $this->response->setJSON([
-                'status' => 'unverified',
-                'message' => 'Your account is not verified. Please verify your email.',
-                'redirect' => base_url('verify-account/prompt')
-            ]);
-        }
-
-        $db = \Config\Database::connect();
-        $manilaTime = new \DateTime('now', new \DateTimeZone('Asia/Manila'));
-        $lastLogin = $manilaTime->format('Y-m-d H:i:s');
-        $db->table('users')
-            ->where('id', $user['id'])
-            ->update(['last_login' => $lastLogin]);
-
-        $activityHelper = new UserActivityHelper();
-        $activityHelper->updateLastActivity($user['user_id'], 'admin_login');
-
-        $session = session();
-        $session->set([
-            'user_id' => $user['id'],
-            'username' => $user['username'],
-            'email' => $user['email'],
-            'role' => $user['role'],
-            'logged_in' => true,
-            'user_id_display' => $user['user_id'],
-            'last_login' => $lastLogin
-        ]);
-
-        return $this->response->setJSON([
-            'status' => 'success',
-            'redirect' => base_url('admin/dashboard')
-        ]);
     }
 }

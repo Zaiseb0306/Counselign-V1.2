@@ -8,6 +8,7 @@ use App\Controllers\BaseController;
 use App\Helpers\UserActivityHelper;
 use CodeIgniter\API\ResponseTrait;
 use App\Models\AppointmentsModel;
+use App\Models\AppointmentOptionModel;
 
 class Appointments extends BaseController
 {
@@ -49,11 +50,21 @@ class Appointments extends BaseController
                     a.description,
                     a.counselor_remarks,
                     COALESCE(c.name, 'No Preference') as counselor_name,
-                    a.status, a.reason,
-                    'pending' as feedback_status,
+                    CASE
+                        WHEN LOWER(COALESCE(a.status, '')) = 'completed'
+                             AND LOWER(COALESCE(sf.status, '')) <> 'submitted'
+                        THEN 'feedback_pending'
+                        ELSE a.status
+                    END AS status,
+                    a.reason,
+                    CASE
+                        WHEN LOWER(COALESCE(sf.status, '')) = 'submitted' THEN 'submitted'
+                        ELSE 'pending'
+                    END AS feedback_status,
                     a.created_at
                   FROM appointments a
                   LEFT JOIN users u ON a.student_id = u.user_id
+                  LEFT JOIN student_feedback sf ON sf.appointment_id = a.id
                   LEFT JOIN counselors c ON c.counselor_id = a.counselor_preference
                   ORDER BY a.created_at DESC";
 
@@ -608,5 +619,108 @@ class Appointments extends BaseController
             'status' => 'success',
             'data' => $stats
         ]);
+    }
+
+    public function getAppointmentOptions()
+    {
+        if (!session()->get('logged_in') || session()->get('role') !== 'admin') {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'Unauthorized access'
+            ], 401);
+        }
+
+        $optionModel = new AppointmentOptionModel();
+        $methodOptions = $optionModel->getOptionsByType('method_type');
+        $purposeOptions = $optionModel->getOptionsByType('purpose');
+
+        return $this->respond([
+            'status' => 'success',
+            'data' => [
+                'method_type' => array_map(static function ($row) {
+                    return ['id' => $row['id'], 'value' => $row['option_value']];
+                }, $methodOptions),
+                'purpose' => array_map(static function ($row) {
+                    return ['id' => $row['id'], 'value' => $row['option_value']];
+                }, $purposeOptions),
+            ],
+        ]);
+    }
+
+    public function saveAppointmentOptions()
+    {
+        if (!session()->get('logged_in') || session()->get('role') !== 'admin') {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'Unauthorized access'
+            ], 401);
+        }
+
+        $payload = $this->request->getJSON(true);
+        if (!is_array($payload)) {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'Invalid request payload'
+            ], 400);
+        }
+
+        $methodType = isset($payload['method_type']) && is_array($payload['method_type']) ? $payload['method_type'] : [];
+        $purpose = isset($payload['purpose']) && is_array($payload['purpose']) ? $payload['purpose'] : [];
+
+        $normalize = static function (array $items): array {
+            $clean = [];
+            foreach ($items as $item) {
+                $value = trim((string) $item);
+                if ($value !== '') {
+                    $clean[] = $value;
+                }
+            }
+            return array_values(array_unique($clean));
+        };
+
+        $methodType = $normalize($methodType);
+        $purpose = $normalize($purpose);
+
+        if (empty($methodType) || empty($purpose)) {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'Method Type and Purpose options must not be empty'
+            ], 400);
+        }
+
+        $optionModel = new AppointmentOptionModel();
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $this->replaceOptionsForType($optionModel, 'method_type', $methodType);
+        $this->replaceOptionsForType($optionModel, 'purpose', $purpose);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'Failed to save appointment options'
+            ], 500);
+        }
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Appointment options saved successfully'
+        ]);
+    }
+
+    private function replaceOptionsForType(AppointmentOptionModel $optionModel, string $type, array $newValues): void
+    {
+        $optionModel->ensureTableExists();
+        $optionModel->where('option_type', $type)->delete();
+
+        foreach ($newValues as $value) {
+            $optionModel->insert([
+                'option_type' => $type,
+                'option_value' => $value,
+                'is_active' => 1,
+            ]);
+        }
     }
 }

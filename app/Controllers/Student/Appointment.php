@@ -7,10 +7,22 @@ use App\Helpers\SecureLogHelper;
 use App\Controllers\BaseController;
 use App\Helpers\UserActivityHelper;
 use App\Models\NotificationsModel;
+use App\Models\AppointmentOptionModel;
+use App\Services\AppointmentService;
+use App\Services\FollowUpAppointmentService;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class Appointment extends BaseController
 {
+    protected AppointmentService $appointmentService;
+    protected FollowUpAppointmentService $followUpAppointmentService;
+
+    public function __construct()
+    {
+        $this->appointmentService = new AppointmentService();
+        $this->followUpAppointmentService = new FollowUpAppointmentService();
+    }
+
     public function schedule()
     {
         // Check if user is logged in and is a student
@@ -187,6 +199,43 @@ class Appointment extends BaseController
                 ->setJSON([
                     'status' => 'error',
                     'message' => 'Error loading counselors: ' . $e->getMessage()
+                ]);
+        }
+    }
+
+    public function getAppointmentOptions()
+    {
+        try {
+            $session = session();
+            if (!$session->get('logged_in') || $session->get('role') !== 'student') {
+                return $this->response->setStatusCode(401)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Unauthorized',
+                    ]);
+            }
+
+            $optionModel = new AppointmentOptionModel();
+            $methodOptions = $optionModel->getOptionsByType('method_type');
+            $purposeOptions = $optionModel->getOptionsByType('purpose');
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'data' => [
+                    'method_type' => array_map(static function ($row) {
+                        return $row['option_value'];
+                    }, $methodOptions),
+                    'purpose' => array_map(static function ($row) {
+                        return $row['option_value'];
+                    }, $purposeOptions),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error in getAppointmentOptions: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to load appointment options',
                 ]);
         }
     }
@@ -451,93 +500,6 @@ class Appointment extends BaseController
                 return $this->response->setJSON($response);
             }
 
-            $db = \Config\Database::connect();
-
-            // Check for conflicts based on consultation type
-            if ($consultation_type === 'Individual Consultation') {
-                // For individual consultation: check if time slot is already booked
-                // Individual consultations cannot book times with:
-                // 1. ANY individual consultation (pending or approved)
-                // 2. ANY group consultation (even if slots available)
-                
-                // Check for individual consultations
-                $builder = $db->table('appointments');
-                $builder->where([
-                    'preferred_date' => $preferred_date,
-                    'preferred_time' => $preferred_time
-                ]);
-                if ($counselor_preference !== 'No preference') {
-                    $builder->where('counselor_preference', $counselor_preference);
-                }
-                $builder->whereIn('status', ['pending', 'approved']);
-                $builder->where('consultation_type', 'Individual Consultation');
-                $hasIndividual = $builder->countAllResults() > 0;
-
-                // Check for group consultations
-                $groupBuilder = $db->table('appointments');
-                $groupBuilder->where([
-                    'preferred_date' => $preferred_date,
-                    'preferred_time' => $preferred_time
-                ]);
-                if ($counselor_preference !== 'No preference') {
-                    $groupBuilder->where('counselor_preference', $counselor_preference);
-                }
-                $groupBuilder->whereIn('status', ['pending', 'approved']);
-                $groupBuilder->where('consultation_type', 'Group Consultation');
-                $hasGroup = $groupBuilder->countAllResults() > 0;
-
-                if ($hasIndividual) {
-                    $response['message'] = 'This time slot is already booked for individual consultation. Please select a different time or date.';
-                    return $this->response->setJSON($response);
-                }
-                if ($hasGroup) {
-                    $response['message'] = 'This time slot has group consultation bookings. Individual consultations cannot book time slots reserved for group consultations. Please select a different time or date.';
-                    return $this->response->setJSON($response);
-                }
-            } else if ($consultation_type === 'Group Consultation') {
-                // For group consultation: check if there are available slots (max 5)
-                // Group consultations cannot book times with:
-                // 1. ANY individual consultation (individual blocks the slot)
-                // 2. 5+ group consultations (full capacity)
-                
-                // Check for individual consultations (blocks group)
-                $individualBuilder = $db->table('appointments');
-                $individualBuilder->where([
-                    'preferred_date' => $preferred_date,
-                    'preferred_time' => $preferred_time
-                ]);
-                if ($counselor_preference !== 'No preference') {
-                    $individualBuilder->where('counselor_preference', $counselor_preference);
-                }
-                $individualBuilder->whereIn('status', ['pending', 'approved']);
-                $individualBuilder->where('consultation_type', 'Individual Consultation');
-                $hasIndividual = $individualBuilder->countAllResults() > 0;
-
-                // Check for group consultation capacity
-                $groupBuilder = $db->table('appointments');
-                $groupBuilder->where([
-                    'preferred_date' => $preferred_date,
-                    'preferred_time' => $preferred_time
-                ]);
-                if ($counselor_preference !== 'No preference') {
-                    $groupBuilder->where('counselor_preference', $counselor_preference);
-                }
-                $groupBuilder->whereIn('status', ['pending', 'approved']);
-                $groupBuilder->where('consultation_type', 'Group Consultation');
-                $groupCount = $groupBuilder->countAllResults();
-
-                if ($hasIndividual) {
-                    $response['message'] = 'This time slot is already booked for individual consultation. Please select a different time or date.';
-                    return $this->response->setJSON($response);
-                }
-                if ($groupCount >= 5) {
-                    $response['message'] = 'Group consultation slots are full for this time slot (maximum 5 participants). Please select a different time or date.';
-                    return $this->response->setJSON($response);
-                }
-            }
-
-            log_message('error', 'Trying to insert appointment for user_id: ' . $user_id);
-
             $data = [
                 'student_id' => $user_id,
                 'preferred_date' => $preferred_date,
@@ -551,45 +513,34 @@ class Appointment extends BaseController
             ];
 
             try {
-                $insertBuilder = $db->table('appointments');
-                if ($insertBuilder->insert($data)) {
-                    // Update last_activity for creating appointment
-                    $activityHelper = new UserActivityHelper();
-                    $activityHelper->updateStudentActivity($user_id, 'create_appointment');
+                // Use AppointmentService instead of direct database insert
+                // This handles all trigger validation logic (prevent_double_booking)
+                $appointmentId = $this->appointmentService->createAppointment($data);
 
-                    // Send email notification to counselor if counselor preference is selected
-                    if (!empty($counselor_preference) && $counselor_preference !== 'No preference') {
-                        $this->sendAppointmentNotificationToCounselor($counselor_preference, $data, $user_id, 'booking');
-                        
-                        // Get student name for notification
-                        $studentName = $this->getStudentName($user_id);
-                        
-                        // Create notification for counselor
-                        $appointmentId = $db->insertID();
-                        $this->createAppointmentNotification($counselor_preference, $appointmentId, 'appointment', 'New Appointment Request', 'Student ' . $studentName . ' has requested a ' . $consultation_type . ' appointment on ' . date('F j, Y', strtotime($preferred_date)) . ' at ' . $preferred_time . '.');
-                    }
+                // Update last_activity for creating appointment
+                $activityHelper = new UserActivityHelper();
+                $activityHelper->updateStudentActivity($user_id, 'create_appointment');
 
-                    $response['status'] = 'success';
-                    $response['message'] = 'Your appointment has been scheduled successfully. Please wait for admin approval.';
-                    $response['appointment_id'] = $db->insertID();
-                } else {
-                    $error = $db->error();
-                    log_message('error', 'Database insert failed: ' . json_encode($error));
-                    $response['message'] = 'Database error. Please try again later.';
+                // Send email notification to counselor if counselor preference is selected
+                if (!empty($counselor_preference) && $counselor_preference !== 'No preference') {
+                    $this->sendAppointmentNotificationToCounselor($counselor_preference, $data, $user_id, 'booking');
+                    
+                    // Get student name for notification
+                    $studentName = $this->getStudentName($user_id);
+                    
+                    // Create notification for counselor
+                    $this->createAppointmentNotification($counselor_preference, $appointmentId, 'appointment', 'New Appointment Request', 'Student ' . $studentName . ' has requested a ' . $consultation_type . ' appointment on ' . date('F j, Y', strtotime($preferred_date)) . ' at ' . $preferred_time . '.');
                 }
+
+                $response['status'] = 'success';
+                $response['message'] = 'Your appointment has been scheduled successfully. Please wait for admin approval.';
+                $response['appointment_id'] = $appointmentId;
             } catch (\Exception $e) {
                 log_message('error', 'Exception during appointment insert: ' . $e->getMessage());
                 log_message('error', 'Exception trace: ' . $e->getTraceAsString());
                 
-                // Check if it's a trigger error about double booking
-                $errorMessage = $e->getMessage();
-                if (strpos($errorMessage, 'Counselor already has an appointment') !== false) {
-                    // This is from the prevent_double_booking trigger
-                    // The trigger doesn't account for consultation_type, so we need to handle it in PHP
-                    $response['message'] = 'This time slot conflicts with an existing appointment. Please select a different time or date.';
-                } else {
-                    $response['message'] = 'Database error: ' . $errorMessage;
-                }
+                // AppointmentService throws exact trigger error messages
+                $response['message'] = $e->getMessage();
             }
             return $this->response->setJSON($response);
         } else {
@@ -880,14 +831,18 @@ class Appointment extends BaseController
             'status' => 'pending'
         ];
 
-        $db = \Config\Database::connect();
-        $builder = $db->table('appointments');
-        $builder->where('id', $appointment_id);
+        try {
+            // Use AppointmentService instead of direct database update
+            // This handles all trigger validation logic (prevent_double_booking_update)
+            $this->appointmentService->updateAppointment($appointment_id, $updateData);
 
-        if ($builder->update($updateData)) {
-            // Get the user_id for this specific appointment
-            $appointment = $builder->where('id', $appointment_id)->get()->getRowArray();
-            
+            // Get the appointment details for notifications
+            $db = \Config\Database::connect();
+            $appointment = $db->table('appointments')
+                ->where('id', $appointment_id)
+                ->get()
+                ->getRowArray();
+
             if ($appointment) {
                 // Update last_activity for editing appointment
                 $activityHelper = new UserActivityHelper();
@@ -906,8 +861,10 @@ class Appointment extends BaseController
             }
 
             return $this->response->setJSON(['success' => true]);
-        } else {
-            return $this->response->setJSON(['success' => false, 'message' => 'Failed to update appointment']);
+        } catch (\Exception $e) {
+            log_message('error', 'Exception during appointment update: ' . $e->getMessage());
+            // AppointmentService throws exact trigger error messages
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 

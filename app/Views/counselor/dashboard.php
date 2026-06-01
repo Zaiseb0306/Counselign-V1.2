@@ -9,16 +9,24 @@
     <meta name="keywords" content="counseling, guidance, university, support, mental health, student wellness" />
     <title>Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="<?= base_url('css/counselor/counselor_dashboard.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/counselor/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/resources.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+
+    <link rel="stylesheet" href="<?= base_url('css/counselor/counselor_vibe_shared.css?v=5') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
 
 
 </head>
 
-<body>
+<body class="dash-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -42,6 +50,10 @@
                 <a href="<?= base_url('counselor/pending-feedback') ?>" class="sidebar-link" title="Pending Feedback">
                     <i class="fas fa-star"></i>
                     <span class="sidebar-text">Pending Feedback</span>
+                </a>
+                <a href="<?= base_url('counselor/pending-feedback/view-feedback') ?>" class="sidebar-link" title="View Feedback">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-text">View Feedback</span>
                 </a>
                 <a href="<?= base_url('counselor/follow-up') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-clipboard-list"></i>
@@ -78,14 +90,9 @@
             <div class="top-bar-right">
 
                 <button class="top-bar-btn" id="openQuoteModalBtn" title="Quotes">
-                    <i class="fas fa-quote-right text-2xl" style="cursor: pointer;"></i>
+                    <i class="fas fa-quote-right" aria-hidden="true"></i>
                 </button>
-                <div class="relative notification-icon-container">
-                    <button class="top-bar-btn" id="notificationIcon" title="Notifications">
-                        <i class="fas fa-bell text-2xl" style="cursor: pointer;"></i>
-                        <span id="notificationBadge" class="notification-badge">0</span>
-                    </button>
-                </div>
+                <?= view('counselor/partials/notification_bell') ?>
 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
@@ -117,80 +124,92 @@
             </div>
         </header>
 
-        <!-- Content Panel -->
-        <div class="content-panel mt-4">
-            <h3 class="text-2xl font-extrabold mb-4">Welcome to Your Workspace, Counselor!</h3>
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <div class="card h-70 p-4 shadow text-decoration-none dashboard-card position-relative d-flex flex-column" id="messagesCard" style="cursor: pointer;">
-                        <h3 class="h3 fw-bold mb-4 title-color">
-                            <i class="fas fa-envelope me-2"></i> Messages
-                            <span id="messagesBadge" class="badge bg-danger messages-badge" style="display:none;" aria-label="New messages">0</span>
-                        </h3>
-                        <div class="d-flex flex-column gap-3 flex-grow-1">
-                            <div class="p-3 bg-light rounded shadow-sm">
-                                <p class="text-body-secondary">Message content goes here...</p>
-                                <p class="small text-secondary mt-2">Received on:</p>
-                            </div>
-                            <div class="p-3 bg-light rounded shadow-sm">
-                                <p class="text-body-secondary">Message content goes here...</p>
-                                <p class="small text-secondary mt-2">Received on:</p>
-                            </div>
+        <main class="appt-page dash-page">
+            <div class="container-fluid px-4 dash-container">
+
+                <section class="stats-summary dash-stats" aria-label="Dashboard overview">
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-clock text-danger"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statPendingCount">-</h3>
+                            <p>Pending</p>
+                        </div>
+                    </article>
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-envelope text-primary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statMessagesCount">-</h3>
+                            <p>Messages</p>
+                        </div>
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-bell text-success"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statNotificationsCount">-</h3>
+                            <p>Notifications</p>
+                        </div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-folder-open text-secondary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statResourcesCount">-</h3>
+                            <p>Resources</p>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="dash-workspace">
+                    <!-- <p class="dash-welcome">Welcome to Your Workspace, Counselor!</p> -->
+                    <div class="row g-4 dash-cards-row">
+                        <div class="col-lg-6">
+                            <section class="dashboard-card dash-panel" id="messagesCard" style="cursor: pointer;">
+                                <header class="dash-panel-header">
+                                    <h3 class="dash-panel-title title-color mb-0">
+                                        <i class="fas fa-envelope me-2"></i> Messages
+                                        <span id="messagesBadge" class="badge bg-danger messages-badge" style="display:none;" aria-label="New messages">0</span>
+                                    </h3>
+                                </header>
+                                <div id="messagesLoading" class="appt-state appt-loading dash-loading">
+                                    <div class="appt-loader" role="status" aria-label="Loading messages">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                    <p>Loading messages...</p>
+                                </div>
+                                <div class="dash-panel-body d-flex flex-column gap-3"></div>
+                            </section>
+                        </div>
+                        <div class="col-lg-6">
+                            <section class="dashboard-card dash-panel" id="appointments-container">
+                                <header class="dash-panel-header">
+                                    <h3 class="dash-panel-title title-color mb-0"><i class="fas fa-list-alt me-2"></i> Appointments</h3>
+                                </header>
+                                <div id="appointmentsLoading" class="appt-state appt-loading dash-loading">
+                                    <div class="appt-loader" role="status" aria-label="Loading appointments">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                    <p>Loading appointments...</p>
+                                </div>
+                                <div class="dash-panel-body d-flex flex-column gap-3"></div>
+                                <footer class="dash-panel-footer d-flex justify-content-start gap-2">
+                                    <a href="<?= base_url('counselor/appointments/view-all') ?>" class="btn btn-dash btn-dash-primary">
+                                        <i class="fas fa-chart-line me-1"></i> Reports
+                                    </a>
+                                    <a href="<?= base_url('counselor/appointments') ?>" class="btn btn-dash btn-dash-success">
+                                        <i class="fas fa-list-alt me-1"></i> Manage
+                                    </a>
+                                </footer>
+                            </section>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card h-70 p-4 shadow dashboard-card" id="appointments-container">
-                        <h3 class="h3 fw-bold mb-4 title-color"><i class="fas fa-list-alt me-2"></i> Appointments</h3>
-                        <div class="d-flex flex-column gap-3">
-                            <div class="p-3 bg-light rounded shadow-sm">
-                                <p class="text-body-secondary">User ID: </p>
-                                <p class="text-body-secondary">Appointment Date: </p>
-                                <p class="text-body-secondary">Time: </p>
-                            </div>
-                            <div class="p-3 bg-light rounded shadow-sm">
-                                <p class="text-body-secondary">User ID: </p>
-                                <p class="text-body-secondary">Appointment Date: </p>
-                                <p class="text-body-secondary">Time: </p>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-start mt-3 gap-2" style="position: relative; z-index: 10;">
-                            <a href="<?= base_url('counselor/appointments/view-all') ?>" class="btn btn-primary" style="pointer-events: auto;">
-                                <i class="fas fa-chart-line me-1"></i> Reports
-                            </a>
-                            <a href="<?= base_url('counselor/appointments') ?>" class="btn btn-success" style="pointer-events: auto;">
-                                <i class="fas fa-list-alt me-1"></i> Manage
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                </section>
             </div>
-
-            <div class="wave"></div>
-        </div>
-
-        <!-- Notifications Dropdown -->
-        <div id="notificationsDropdown" class="absolute bg-white rounded-lg shadow-lg border">
-            <div class="p-3 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-blue-800">Notifications</h3>
-                <div class="d-flex gap-2">
-                    <button id="seeHistoryBtn" class="btn btn-sm btn-outline-secondary" title="See History">
-                        <i class="fas fa-history"></i> History
-                    </button>
-                    <button id="markAllReadBtn" class="btn btn-sm btn-outline-primary" title="Mark all as read">
-                        <i class="fas fa-check-double"></i> Clear All
-                    </button>
-                </div>
-            </div>
-            <div class="notifications-list max-h-64 overflow-y-auto">
-                <!-- Notifications will be dynamically populated here -->
-            </div>
-        </div>
+        </main>
 
         <!-- Resources Accordion Section -->
-        <section class="resources-section m-4">
-            <div class="container-fluid px-0">
-                <div class="accordion" id="resourcesParentAccordion">
+        <section class="resources-section dash-resources">
+            <div class="container-fluid px-4 dash-container">
+                <div class="dash-panel dash-resources-panel">
+                    <div class="accordion" id="resourcesParentAccordion">
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="resourcesParentHeading">
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#resourcesParentCollapse" aria-expanded="true" aria-controls="resourcesParentCollapse">
@@ -203,8 +222,8 @@
                                 <div class="accordion" id="resourcesAccordion">
                                     <div id="resourcesAccordionContent">
                                         <div class="text-center py-4">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Loading resources...</span>
+                                            <div class="appt-loader" role="status">
+                                                <span></span><span></span><span></span>
                                             </div>
                                             <p class="mt-2 text-muted">Loading resources...</p>
                                         </div>
@@ -213,12 +232,12 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
             </div>
         </section>
-    </div>
 
-    <!-- Chat Popup -->
+        <!-- Chat Popup -->
     <div id="chatPopup" class="chat-popup">
         <div class="chat-header">
             <div class="font-bold">Send A Message to the Admin</div>
@@ -254,10 +273,10 @@
     </div>
 
     <!-- Appointment Details Modal -->
-    <div class="modal fade" id="appointmentDetailsModal" tabindex="-1" aria-labelledby="appointmentDetailsLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="appointmentDetailsModal" tabindex="-1" aria-labelledby="appointmentDetailsLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header">
                     <h5 class="modal-title" id="appointmentDetailsLabel">Appointment Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -275,10 +294,10 @@
     </div>
 
     <!-- Shared Confirmation Modal (used for logout and other confirms) -->
-    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header">
                     <h5 class="modal-title" id="confirmationModalLabel">Confirm Action</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -292,10 +311,10 @@
     </div>
 
     <!-- Shared Alert Modal (utility compatible) -->
-    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header">
                     <h5 class="modal-title" id="alertModalLabel">Information</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -311,10 +330,10 @@
     </div>
 
     <!-- Shared Notice Modal (utility compatible) -->
-    <div class="modal fade" id="noticeModal" tabindex="-1" aria-labelledby="noticeModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="noticeModal" tabindex="-1" aria-labelledby="noticeModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header reschedule-modal-header">
                     <h5 class="modal-title" id="noticeModalLabel">Notice</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -330,14 +349,14 @@
     </div>
 
     <!-- Daily Quote Submission Modal -->
-    <div class="modal fade" id="quoteSubmissionModal" tabindex="-1" aria-labelledby="quoteSubmissionModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="quoteSubmissionModal" tabindex="-1" aria-labelledby="quoteSubmissionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #060E57, #0A1875); color: white;">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header">
                     <h5 class="modal-title" id="quoteSubmissionModalLabel">
                         <i class="fas fa-quote-left me-2"></i>Share a Daily Quote
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="text-muted mb-4">
@@ -435,14 +454,14 @@
     </div>
 
     <!-- My Quotes List Modal -->
-    <div class="modal fade" id="myQuotesModal" tabindex="-1" aria-labelledby="myQuotesModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="myQuotesModal" tabindex="-1" aria-labelledby="myQuotesModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #060E57, #0A1875); color: white;">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header">
                     <h5 class="modal-title" id="myQuotesModalLabel">
                         <i class="fas fa-history me-2"></i>My Submitted Quotes
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3 alert alert-info">
@@ -474,9 +493,9 @@
     </div>
 
     <!-- Preview Modal -->
-    <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="previewModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
-            <div class="modal-content">
+            <div class="modal-content appointment-modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="previewModalTitle">Resource Preview</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -489,6 +508,11 @@
     </div>
 
 
+    <?= view('counselor/partials/notifications_dropdown') ?>
+
+    <script>
+        window.BASE_URL = "<?= base_url() ?>";
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -496,13 +520,11 @@
     <script src="<?= base_url('js/utils/resource-preview.js') ?>"></script>
 
     <script src="<?= base_url('js/modals/student_dashboard_modals.js') ?>"></script>
+    <script src="<?= base_url('js/counselor/counselor_notifications_dropdown.js?v=3') ?>"></script>
     <script src="<?= base_url('js/counselor/counselor_dashboard.js') ?>"></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/counselor/logout.js') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
-    <script>
-        window.BASE_URL = "<?= base_url() ?>";
-    </script>
 
 
 </body>

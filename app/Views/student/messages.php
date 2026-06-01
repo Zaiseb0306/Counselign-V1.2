@@ -6,40 +6,41 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Messages - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="<?= base_url('css/student/student_messages.css') ?>" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="<?= base_url('css/counselor/counselor_messages.css?v=5') ?>" rel="stylesheet" />
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_vibe_shared.css?v=1') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
 </head>
 
-<body>
+<body class="msg-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
-            <!-- Logo/Toggle Button -->
             <button class="sidebar-toggle-btn" id="sidebarToggle" title="Toggle Sidebar">
                 <img src="<?= base_url('Photos/counselign_logo.png') ?>" alt="Logo" class="sidebar-logo">
                 <span class="sidebar-brand-text">Counselign</span>
             </button>
 
-            <!-- Navigation Links -->
             <nav class="sidebar-nav">
-                <a href="<?= base_url('student/dashboard') ?>" class="sidebar-link active" title="Dashboard">
+                <a href="<?= base_url('student/dashboard') ?>" class="sidebar-link" title="Dashboard">
                     <i class="fas fa-home"></i>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
-
                 <a href="<?= base_url('student/schedule-appointment') ?>" class="sidebar-link" title="Schedule an Appointment">
                     <i class="fas fa-plus-circle"></i>
                     <span class="sidebar-text">Schedule an Appointment</span>
                 </a>
-
                 <a href="<?= base_url('student/my-appointments') ?>" class="sidebar-link" title="My Appointments">
                     <i class="fas fa-list-alt"></i>
                     <span class="sidebar-text">My Appointments</span>
                 </a>
-
                 <a href="<?= base_url('student/follow-up-sessions') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-clipboard-list"></i>
                     <span class="sidebar-text">Follow-up Sessions</span>
@@ -52,18 +53,15 @@
         </div>
     </aside>
 
-    <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Floating Sidebar Toggle for Mobile (shows when sidebar is hidden) -->
     <button class="floating-sidebar-toggle" id="floatingSidebarToggle" title="Open Menu">
         <img src="<?= base_url('Photos/counselign_logo.png') ?>" alt="Menu">
     </button>
 
-    <div class="main-wrapper" id="mainWrapper">
-        <!-- Interactive Profile Picture Section -->
+    <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
 
-        <!-- Top Bar -->
+    <div class="main-wrapper" id="mainWrapper">
         <header class="top-bar">
             <div class="top-bar-left">
                 <h1 class="page-title-header">
@@ -73,8 +71,8 @@
             </div>
 
             <div class="top-bar-right">
+                <?= view('student/partials/header_actions') ?>
 
-                <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
                     <button class="top-bar-btn profile-btn" id="profileDropdownBtn">
                         <img id="profile-img-top" src="<?= base_url('Photos/profile.png') ?>" alt="Profile" class="profile-img-small">
@@ -104,95 +102,122 @@
             </div>
         </header>
 
-    <!-- Mobile Sidebar Toggle Button -->
-    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
-        <i class="fas fa-comments"></i>
-    </button>
+        <main class="appt-page msg-page">
+            <div class="container-fluid px-4 msg-container">
 
-    <!-- Mobile Sidebar Overlay -->
-    <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
+                <section class="stats-summary msg-stats" aria-label="Messaging statistics">
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-comments text-primary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statConversationsCount">-</h3>
+                            <p>Conversations</p>
+                        </div>
+                    </article>
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-envelope text-danger"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statUnreadCount">-</h3>
+                            <p>Unread</p>
+                        </div>
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-circle text-success"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statOnlineCount">-</h3>
+                            <p>Online</p>
+                        </div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-user-clock text-secondary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statActiveCount">-</h3>
+                            <p>Active</p>
+                        </div>
+                    </article>
+                </section>
 
-    <!-- Main Content -->
-    <div class="messages-wrapper">
-        <div class="messages-layout">
-            <!-- Conversations Sidebar (Counselors list) -->
-            <div class="conversations-sidebar" id="conversationsSidebar">
-                <div class="sidebar-header">
-                    <h3 class="sidebar-title">
-                        <i class="fas fa-user-md me-2"></i>
-                        Counselors
-                    </h3>
-                </div>
+                <div class="messages-wrapper msg-messenger">
+                    <div class="messages-layout">
+                        <div class="conversations-sidebar" id="conversationsSidebar">
+                            <div class="sidebar-header">
+                                <h3 class="sidebar-title">
+                                    <i class="fas fa-comments me-2"></i>
+                                    Conversations
+                                </h3>
+                            </div>
 
-                <!-- Search Box -->
-                <div class="search-section">
-                    <div class="search-box">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" class="search-input" placeholder="Search counselors...">
+                            <div class="search-section">
+                                <div class="search-box">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" class="search-input" placeholder="Search conversations...">
+                                </div>
+                            </div>
+
+                            <div class="conversations-list">
+                                <div class="loading-state appt-state appt-loading" id="conversationsLoading">
+                                    <div class="appt-loader" role="status" aria-label="Loading conversations">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                    <p>Loading conversations...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-area">
+                            <div class="chat-header">
+                                <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Show conversations list">
+                                    <i class="fas fa-list-ul" aria-hidden="true"></i>
+                                </button>
+                                <div class="chat-user-info">
+                                    <div class="user-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="user-details">
+                                        <h4 class="user-name">Messages</h4>
+                                        <span class="user-status">Select a conversation to start messaging</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="messages-area" id="messages-container">
+                                <div class="empty-chat appt-empty" id="empty-state">
+                                    <div class="empty-icon appt-empty-icon">
+                                        <i class="fas fa-inbox"></i>
+                                    </div>
+                                    <h5>No Messages Yet</h5>
+                                    <p>Select a conversation from the list to view messages.</p>
+                                </div>
+                            </div>
+
+                            <div class="message-input-section">
+                                <div class="input-container">
+                                    <textarea id="message-input" class="message-input"
+                                        placeholder="Select a conversation to reply..." disabled></textarea>
+                                    <button id="send-button" class="send-button" disabled>
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Conversations List -->
-                <div class="conversations-list">
-                    <div class="loading-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>Loading conversations...</span>
-                    </div>
-                </div>
             </div>
-
-            <!-- Chat Area -->
-            <div class="chat-area">
-                <!-- Chat Header -->
-                <div class="chat-header">
-                    <div class="chat-user-info">
-                        <div class="user-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="user-details">
-                            <h4 class="user-name">Messages</h4>
-                            <span class="user-status">Select a conversation to start messaging</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Messages Area -->
-                <div class="messages-area" id="messages-container">
-                    <div class="empty-chat" id="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-inbox"></i>
-                        </div>
-                        <h5>No Messages Yet</h5>
-                        <p>Select a counselor from the list to start messaging.</p>
-                    </div>
-                </div>
-
-                <!-- Message Input -->
-                <div class="message-input-section">
-                    <div class="input-container">
-                        <textarea id="message-input" class="message-input"
-                            placeholder="Select a conversation to reply..." disabled></textarea>
-                        <button id="send-button" class="send-button" disabled>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 
-    
+    <?= view('student/partials/notifications_dropdown') ?>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
     </script>
-    <script src="<?= base_url('js/student/student_messages.js') ?>" defer></script>
-    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js?v=3') ?>"></script>
+    <script src="<?= base_url('js/student/student_messages.js?v=4') ?>" defer></script>
     <script src="<?= base_url('js/student/student_header_drawer.js') ?>"></script>
+    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/student/logout.js') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
-
 </body>
 
 </html>

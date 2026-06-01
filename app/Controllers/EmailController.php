@@ -53,7 +53,7 @@ class EmailController extends BaseController
 
     public function sendContactEmail()
     {
-        if (!$this->request->isAJAX()) {
+        if (!$this->request->is('post')) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid request method']);
         }
 
@@ -94,6 +94,16 @@ class EmailController extends BaseController
         }
 
         try {
+            set_time_limit(30);
+            $this->mailer->Timeout = max(5, (int) ($this->emailConfig->SMTPTimeout ?? 15));
+            $this->mailer->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ],
+            ];
+
             // Clear previous recipients
             $this->mailer->clearAddresses();
             

@@ -1,0 +1,334 @@
+/**
+ * Shared vibe-coding content layer for student pages (*-page-body).
+ * Header: css/utils/vibe_topbar.css
+ */
+:root {
+    --appt-navy: #060E57;
+    --appt-navy-soft: #0a1a7a;
+    --appt-surface: #ffffff;
+    --appt-muted: #64748b;
+    --appt-border: rgba(6, 14, 87, 0.08);
+    --appt-glow: rgba(6, 14, 87, 0.12);
+    --appt-radius: 14px;
+    --appt-radius-sm: 10px;
+    --appt-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --appt-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Mesh page background (pages that only style header inherit this) */
+body.nh-page-body,
+body.fb-page-body,
+body.fus-page-body,
+body.ma-page-body,
+body.msg-page-body,
+body.ssa-page-body,
+body.sa-page-body {
+    background-color: #eef1f8 !important;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(6, 14, 87, 0.07), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 110, 253, 0.06), transparent),
+        linear-gradient(180deg, #f4f6fc 0%, #eef1f8 100%) !important;
+    font-family: var(--appt-font) !important;
+    color: #1e293b;
+}
+
+/* Main / content wrappers */
+body[class*="-page-body"] main,
+body[class*="-page-body"] .main-content,
+body[class*="-page-body"] .messages-wrapper {
+    background: transparent !important;
+    padding: 0.75rem clamp(0.35rem, 1vw, 1.2rem) 2rem !important;
+}
+
+body[class*="-page-body"] main.bg-light {
+    background: transparent !important;
+}
+
+body[class*="-page-body"] .container-fluid {
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Vibe shell: primary content panels */
+body[class*="-page-body"] .feedback-card,
+body[class*="-page-body"] .follow-up-container,
+body[class*="-page-body"] .appointment-container,
+body[class*="-page-body"] .announcements-container,
+body[class*="-page-body"] .appointment-form,
+body[class*="-page-body"] .counselors-schedule-sidebar,
+body[class*="-page-body"] #notificationsListContainer > .card,
+body[class*="-page-body"] .messages-layout {
+    background: var(--appt-surface) !important;
+    border: 1px solid var(--appt-border) !important;
+    border-radius: var(--appt-radius) !important;
+    box-shadow:
+        0 4px 6px rgba(6, 14, 87, 0.03),
+        0 22px 48px var(--appt-glow) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+body[class*="-page-body"] .feedback-card::before,
+body[class*="-page-body"] .follow-up-container::before,
+body[class*="-page-body"] .appointment-container::before,
+body[class*="-page-body"] .announcements-container::before,
+body[class*="-page-body"] .appointment-form::before,
+body[class*="-page-body"] .counselors-schedule-sidebar::before,
+body[class*="-page-body"] #notificationsListContainer > .card::before,
+body[class*="-page-body"] .messages-layout::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--appt-navy), #3b82f6, #8b5cf6);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Section titles */
+body[class*="-page-body"] .section-title,
+body[class*="-page-body"] .feedback-header h3,
+body[class*="-page-body"] #notificationsListContainer h2,
+body[class*="-page-body"] .subsection-title {
+    color: var(--appt-navy) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+
+body[class*="-page-body"] .feedback-header h3 i,
+body[class*="-page-body"] .section-title i {
+    color: #3b82f6;
+}
+
+body[class*="-page-body"] .text-primary {
+    color: var(--appt-navy) !important;
+}
+
+body[class*="-page-body"] .text-muted {
+    color: var(--appt-muted) !important;
+}
+
+/* Nav tabs */
+body[class*="-page-body"] .nav-tabs {
+    border-bottom: 1px solid var(--appt-border);
+    gap: 0.35rem;
+}
+
+body[class*="-page-body"] .nav-tabs .nav-link {
+    color: var(--appt-muted);
+    font-weight: 600;
+    border: 1px solid transparent;
+    border-radius: var(--appt-radius-sm);
+    margin-bottom: 0.5rem;
+}
+
+body[class*="-page-body"] .nav-tabs .nav-link:hover {
+    color: var(--appt-navy);
+    background: rgba(6, 14, 87, 0.05);
+}
+
+body[class*="-page-body"] .nav-tabs .nav-link.active {
+    color: #fff !important;
+    background: linear-gradient(135deg, var(--appt-navy) 0%, #2563eb 100%) !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 18px rgba(6, 14, 87, 0.28);
+}
+
+/* Cards / list items */
+body[class*="-page-body"] .appointment-card,
+body[class*="-page-body"] .follow-up-session-card,
+body[class*="-page-body"] .announcement-card,
+body[class*="-page-body"] .event-card,
+body[class*="-page-body"] .modern-announcement-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 1px solid var(--appt-border) !important;
+    border-radius: var(--appt-radius-sm) !important;
+    box-shadow: 0 4px 16px rgba(6, 14, 87, 0.06) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[class*="-page-body"] .appointment-card:hover,
+body[class*="-page-body"] .follow-up-session-card:hover,
+body[class*="-page-body"] .announcement-card:hover,
+body[class*="-page-body"] .event-card:hover,
+body[class*="-page-body"] .modern-announcement-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(6, 14, 87, 0.12) !important;
+}
+
+/* Inner sections */
+body[class*="-page-body"] .approved-appointments-section,
+body[class*="-page-body"] .pending-appointments-section,
+body[class*="-page-body"] .question-item,
+body[class*="-page-body"] .likert-legend {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%) !important;
+    border: 1px solid var(--appt-border) !important;
+    border-radius: var(--appt-radius-sm) !important;
+}
+
+body[class*="-page-body"] .question-label {
+    color: var(--appt-navy) !important;
+}
+
+body[class*="-page-body"] .likert-scale input[type="radio"]:checked + label,
+body[class*="-page-body"] .scale-option input:checked + label {
+    background: linear-gradient(135deg, var(--appt-navy), #2563eb);
+    color: #fff;
+    border-color: transparent;
+}
+
+/* Forms */
+body[class*="-page-body"] .form-control,
+body[class*="-page-body"] .form-select,
+body[class*="-page-body"] .input-group-text {
+    border: 1px solid rgba(6, 14, 87, 0.14);
+    border-radius: var(--appt-radius-sm);
+    font-family: var(--appt-font);
+}
+
+body[class*="-page-body"] .form-control:focus,
+body[class*="-page-body"] .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+/* Primary buttons */
+body[class*="-page-body"] .btn-primary {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, #1d4ed8 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(6, 14, 87, 0.28);
+    font-weight: 600;
+}
+
+body[class*="-page-body"] .btn-primary:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+body[class*="-page-body"] .btn-outline-primary {
+    color: var(--appt-navy) !important;
+    border-color: rgba(6, 14, 87, 0.25) !important;
+}
+
+/* Messages layout */
+body.msg-page-body .messages-wrapper {
+    padding: 0.75rem clamp(0.35rem, 1vw, 1.2rem) 2rem !important;
+}
+
+body.msg-page-body .conversations-sidebar,
+body.msg-page-body .chat-area {
+    background: var(--appt-surface) !important;
+    border: 1px solid var(--appt-border) !important;
+    border-radius: var(--appt-radius) !important;
+    box-shadow: 0 4px 24px var(--appt-glow);
+}
+
+body.msg-page-body .sidebar-header,
+body.msg-page-body .chat-header {
+    background: linear-gradient(180deg, #f8fafc 0%, #fff 100%) !important;
+    border-bottom: 1px solid var(--appt-border) !important;
+}
+
+body.msg-page-body .sidebar-title,
+body.msg-page-body .user-name {
+    color: var(--appt-navy) !important;
+    font-weight: 700;
+}
+
+body.msg-page-body .conversation-item.active,
+body.msg-page-body .conversation-item:hover {
+    background: rgba(6, 14, 87, 0.06) !important;
+}
+
+/* Announcements: replace blue gradient container */
+body.sa-page-body .announcements-container {
+    background: var(--appt-surface) !important;
+    background-image: none !important;
+    padding: 1.25rem 1.35rem !important;
+}
+
+body.sa-page-body .calendar-section,
+body.sa-page-body .announcements-section,
+body.sa-page-body .upcoming-events-section {
+    background: linear-gradient(180deg, #f8fafc 0%, #fff 100%) !important;
+    border: 1px solid var(--appt-border);
+    border-radius: var(--appt-radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+body.sa-page-body .calendar-nav-btn {
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+    color: var(--appt-navy);
+    border-radius: 8px;
+}
+
+body.sa-page-body .calendar-month {
+    color: var(--appt-navy);
+    font-weight: 700;
+}
+
+/* Schedule page layout */
+body.ssa-page-body .schedule-layout,
+body.ssa-page-body .page-content-row {
+    gap: 1rem;
+}
+
+body.ssa-page-body .main-content,
+body.ma-page-body .main-content {
+    background: transparent !important;
+    padding: 0.75rem clamp(0.35rem, 1vw, 1.2rem) 2rem !important;
+}
+
+/* Notification history list items (JS-rendered) */
+body.nh-page-body .notification-history-item,
+body.nh-page-body #notificationsList .list-group-item,
+body.nh-page-body #notificationsList > div {
+    border: 1px solid var(--appt-border) !important;
+    border-radius: var(--appt-radius-sm) !important;
+    margin-bottom: 0.65rem;
+    background: #fff !important;
+}
+
+body.nh-page-body #notificationsListContainer > .card {
+    padding: 1.35rem 1.5rem !important;
+}
+
+body.nh-page-body #notificationsListContainer h2 {
+    font-size: 1.35rem !important;
+    color: var(--appt-navy) !important;
+}
+
+/* Top bar: see public/css/utils/vibe_topbar.css (shared with counselor pages) */
+
+/* Modals on student pages */
+body[class*="-page-body"] .modal-content {
+    border: 1px solid var(--appt-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(6, 14, 87, 0.22);
+}
+
+body[class*="-page-body"] .modal-header {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, #1e3a8a 100%);
+    color: #fff;
+    border-bottom: none;
+}
+
+body[class*="-page-body"] .modal-header .modal-title {
+    color: #fff;
+    font-weight: 700;
+}
+
+body[class*="-page-body"] .modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+body[class*="-page-body"] .modal-footer {
+    background: #f8fafc;
+    border-top: 1px solid var(--appt-border);
+}

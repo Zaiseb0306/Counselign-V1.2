@@ -188,8 +188,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // Counselor selection modal elements
   // Removed counselor selection UI (moved to dedicated Messages page)
 
-  // Notification handling
+  // Notification handling (toggle/position: student_notifications_dropdown.js)
   function initializeNotifications() {
+    if (window.__studentNotificationsDropdownInit) {
+      window.reloadStudentNotificationsDropdown = loadNotifications;
+      return;
+    }
+
     const notificationIcon = document.getElementById("notificationIcon");
     const notificationsDropdown = document.getElementById(
       "notificationsDropdown"

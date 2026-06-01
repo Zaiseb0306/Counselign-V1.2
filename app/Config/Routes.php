@@ -9,7 +9,6 @@ $routes->get('/', 'Auth::index');
 $routes->setDefaultController('Auth');
 $routes->post('auth/login', 'Auth::login');
 $routes->match(['GET', 'POST'], 'auth/signup', 'Auth::signup');
-$routes->post('auth/verify-admin', 'Auth::verifyAdmin');
 $routes->get('auth/logout', 'Logout::index');
 $routes->get('test/logout', 'TestActivity::testLogout');
 $routes->get('test/login', 'TestActivity::testLogin');
@@ -58,6 +57,8 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], function ($rou
     $routes->post('appointments/updateStatus', 'Appointments::updateStatus');
     $routes->post('appointments/updateAppointmentStatus', 'Appointments::updateAppointmentStatus');
     $routes->post('appointments/reschedule', 'Appointments::reschedule');
+    $routes->get('appointments/options', 'Appointments::getAppointmentOptions');
+    $routes->post('appointments/options/save', 'Appointments::saveAppointmentOptions');
     $routes->post('appointments/track-export', 'Appointments::trackExport');
     $routes->get('follow-up-sessions', 'FollowUpSessions::index');
     $routes->get('follow-up-sessions/completed-appointments', 'FollowUpSessions::getAllCompletedAppointments');
@@ -125,6 +126,34 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], function ($rou
     $routes->get('feedback-analytics/data', 'FeedbackAnalytics::getAnalyticsData');
     $routes->get('feedback-analytics/export-pdf', 'FeedbackAnalytics::exportPDF');
     $routes->get('feedback-analytics/export-excel', 'FeedbackAnalytics::exportExcel');
+    $routes->get('feedback-analytics/view-feedback', 'FeedbackAnalytics::viewFeedback');
+    $routes->get('feedback-analytics/get-feedback-data', 'FeedbackAnalytics::getFeedbackData');
+
+    // Feedback Questions management endpoints
+    $routes->get('feedback-questions', 'FeedbackQuestions::index');
+    $routes->get('feedback-questions/getAll', 'FeedbackQuestions::getAll');
+    $routes->post('feedback-questions/create', 'FeedbackQuestions::create');
+    $routes->post('feedback-questions/update/(:num)', 'FeedbackQuestions::update/$1');
+    $routes->post('feedback-questions/delete/(:num)', 'FeedbackQuestions::delete/$1');
+    $routes->post('feedback-questions/reorder', 'FeedbackQuestions::reorder');
+    $routes->post('feedback-questions/seed-defaults', 'FeedbackQuestions::seedDefaults');
+
+    // Data Analytics endpoints
+    $routes->get('data-analytics', 'DataAnalytics::index');
+    $routes->get('data-analytics/getDailyAnalytics', 'DataAnalytics::getDailyAnalytics');
+    $routes->get('data-analytics/getWeeklyAnalytics', 'DataAnalytics::getWeeklyAnalytics');
+    $routes->get('data-analytics/getMonthlyAnalytics', 'DataAnalytics::getMonthlyAnalytics');
+    $routes->get('data-analytics/getYearlyAnalytics', 'DataAnalytics::getYearlyAnalytics');
+    $routes->get('data-analytics/getDetailedAnalytics', 'DataAnalytics::getDetailedAnalytics');
+    $routes->get('data-analytics/getAcademicFilterOptions', 'DataAnalytics::getAcademicFilterOptions');
+    $routes->get('data-analytics/getSuccessFailedAnalytics', 'DataAnalytics::getSuccessFailedAnalytics');
+    $routes->get('data-analytics/getCategoryAnalytics', 'DataAnalytics::getCategoryAnalytics');
+    $routes->get('data-analytics/getReasonAnalytics', 'DataAnalytics::getReasonAnalytics');
+    $routes->get('data-analytics/getDepartmentAnalytics', 'DataAnalytics::getDepartmentAnalytics');
+    $routes->get('data-analytics/getYearLevelAnalytics', 'DataAnalytics::getYearLevelAnalytics');
+    $routes->get('data-analytics/getTypeOfConcernAnalytics', 'DataAnalytics::getTypeOfConcernAnalytics');
+    $routes->get('data-analytics/getPurposeAnalytics', 'DataAnalytics::getPurposeAnalytics');
+    $routes->get('data-analytics/getCategoryBreakdownAnalytics', 'DataAnalytics::getCategoryBreakdownAnalytics');
 });
 
 // Student routes
@@ -145,6 +174,7 @@ $routes->group('student', ['namespace' => 'App\Controllers\Student'], function (
     $routes->get('check-appointment-eligibility', 'Appointment::checkAppointmentEligibility');
     $routes->get('check-counselor-conflicts', 'Appointment::checkCounselorConflicts');
     $routes->get('check-edit-conflicts', 'Appointment::checkEditConflicts');
+    $routes->get('appointment/options', 'Appointment::getAppointmentOptions');
     $routes->get('get-counselor-schedules', 'Appointment::getCounselorSchedules');
     // Calendar daily stats (approved counts and fully booked flags)
     $routes->get('calendar/daily-stats', 'Appointment::getCalendarDailyStats');
@@ -228,6 +258,8 @@ $routes->group('counselor', ['namespace' => 'App\Controllers\Counselor'], functi
     $routes->get('pending-feedback', 'PendingFeedback::index');
     $routes->get('pending-feedback/get-appointments', 'PendingFeedback::getPendingFeedbackAppointments');
     $routes->post('pending-feedback/send-reminder', 'PendingFeedback::sendReminderEmail');
+    $routes->get('pending-feedback/view-feedback', 'PendingFeedback::viewFeedback');
+    $routes->get('pending-feedback/get-feedback-data', 'PendingFeedback::getFeedbackData');
     $routes->get('follow-up', 'FollowUp::index');
 
     // Reports endpoints used by view-all and charts
@@ -254,6 +286,7 @@ $routes->group('counselor', ['namespace' => 'App\Controllers\Counselor'], functi
     $routes->get('notifications/history', 'Notifications::history');
     $routes->get('notifications/get-history', 'Notifications::getHistory');
     $routes->post('notifications/delete', 'Notifications::delete');
+    $routes->post('notifications/deleteAll', 'Notifications::deleteAll');
 
     // Follow-up appointments routes
     $routes->get('follow-up', 'FollowUp::index');

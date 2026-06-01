@@ -2,8 +2,6 @@
 
 namespace App\Controllers\Counselor;
 
-
-use App\Helpers\SecureLogHelper;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -51,10 +49,13 @@ class HistoryReports extends Controller
 
         return $this->response->setJSON([
             'status' => 'success',
-            'data' => $query->getResult()
+            'data' => $query->getResult(),
         ]);
     }
 
+    /**
+     * Historical report data — same logic as Admin\HistoryReports, scoped to this counselor.
+     */
     public function getHistoricalData()
     {
         if (!session()->get('logged_in') || session()->get('role') !== 'counselor') {
@@ -63,270 +64,345 @@ class HistoryReports extends Controller
 
         $counselor_id = session()->get('user_id_display') ?? session()->get('user_id');
         $month = $this->request->getGet('month') ?? date('Y-m');
-        // Prevent access to future months
         $currentMonth = date('Y-m');
         if ($month > $currentMonth) {
             $month = $currentMonth;
         }
         $reportType = $this->request->getGet('type') ?? 'monthly';
 
+        $counselorEsc = $this->db->escape($counselor_id);
+        $counselorFilter = " AND (counselor_preference = {$counselorEsc} OR counselor_preference IS NULL)";
+        $counselorFilterA = " AND (a.counselor_preference = {$counselorEsc} OR a.counselor_preference IS NULL)";
+
+        $feedbackSubmittedSql = "LOWER(REPLACE(COALESCE(a.student_feedback_status, ''), ' ', '_')) IN ('feedback_submitted', 'submitted')";
+        $feedbackSubmittedSqlNoAlias = "LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) IN ('feedback_submitted', 'submitted')";
+        $feedbackPendingSql = "a.status = 'feedback_pending' OR (a.status = 'completed' AND LOWER(REPLACE(COALESCE(a.student_feedback_status, ''), ' ', '_')) NOT IN ('feedback_submitted', 'submitted'))";
+        $feedbackPendingSqlNoAlias = "status = 'feedback_pending' OR (status = 'completed' AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) NOT IN ('feedback_submitted', 'submitted'))";
+
         try {
             $firstDay = new \DateTime($month . '-01');
-            $lastDay = clone $firstDay; $lastDay->modify('last day of this month');
+            $lastDay = clone $firstDay;
+            $lastDay->modify('last day of this month');
 
-            $labels = []; $completed = []; $approved = []; $rescheduled = []; $pending = []; $cancelled = []; $feedback_pending = [];
-
-            // Counselor filtering condition - matches the pattern from GetAllAppointments controller
-            $counselorFilter = " AND (appointments.counselor_preference = " . $this->db->escape($counselor_id) . " OR appointments.counselor_preference IS NULL)";
+            $labels = [];
+            $completed = [];
+            $approved = [];
+            $rejected = [];
+            $pending = [];
+            $feedback_pending = [];
+            $rescheduled = [];
 
             if ($reportType === 'daily') {
-                $query = $this->db->query(
-                    "SELECT
+                $query = $this->db->query("
+                    SELECT
                         DATE(preferred_date) as date,
-                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                        SUM(CASE
+                            WHEN status = 'completed'
+                                 AND {$feedbackSubmittedSqlNoAlias}
+                            THEN 1 ELSE 0
+                        END) as completed,
                         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                        SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled,
+                        SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as feedback_pending,
-                        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+                        SUM(CASE WHEN {$feedbackPendingSqlNoAlias} THEN 1 ELSE 0 END) as feedback_pending,
+                        SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled
                     FROM appointments
-                    WHERE preferred_date BETWEEN ? AND ?" . $counselorFilter . "
+                    WHERE preferred_date BETWEEN ? AND ?{$counselorFilter}
                     GROUP BY DATE(preferred_date)
-                    ORDER BY DATE(preferred_date)",
-                    [$firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]
-                );
+                    ORDER BY DATE(preferred_date)
+                ", [$firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]);
 
                 foreach ($query->getResult() as $row) {
                     $labels[] = date('j', strtotime($row->date));
-                    $completed[] = (int)$row->completed;
-                    $approved[] = (int)$row->approved;
-                    $rescheduled[] = (int)$row->rescheduled;
-                    $pending[] = (int)$row->pending;
-                    $feedback_pending[] = (int)$row->feedback_pending;
-                    $cancelled[] = (int)$row->cancelled;
+                    $completed[] = (int) $row->completed;
+                    $approved[] = (int) $row->approved;
+                    $rejected[] = (int) $row->rejected;
+                    $pending[] = (int) $row->pending;
+                    $feedback_pending[] = (int) $row->feedback_pending;
+                    $rescheduled[] = (int) $row->rescheduled;
                 }
 
-                // Add follow-up sessions for counselor
-                $fu = $this->db->query(
-                    "SELECT DATE(preferred_date) as date,
+                $fu = $this->db->query("
+                    SELECT DATE(preferred_date) as date,
                            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                           0 as approved,
+                           0 as rejected,
                            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+                           SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as feedback_pending
                     FROM follow_up_appointments
                     WHERE counselor_id = ? AND preferred_date BETWEEN ? AND ?
                     GROUP BY DATE(preferred_date)
-                    ORDER BY DATE(preferred_date)",
-                    [$counselor_id, $firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]
-                );
+                    ORDER BY DATE(preferred_date)
+                ", [$counselor_id, $firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]);
+
                 foreach ($fu->getResult() as $row) {
-                    $dayNum = (int)date('j', strtotime($row->date));
-                    $idx = array_search($dayNum, $labels);
-                    if ($idx === false) continue;
-                    $completed[$idx] += (int)$row->completed;
-                    $pending[$idx] += (int)$row->pending;
-                    $cancelled[$idx] += (int)$row->cancelled;
+                    $dayNum = (int) date('j', strtotime($row->date));
+                    $idx = array_search($dayNum, $labels, true);
+                    if ($idx === false) {
+                        continue;
+                    }
+                    $completed[$idx] += (int) $row->completed;
+                    $pending[$idx] += (int) $row->pending;
+                    $feedback_pending[$idx] += (int) $row->feedback_pending;
                 }
             } elseif ($reportType === 'weekly') {
-                $firstMonday = clone $firstDay; $dayOfWeek = $firstMonday->format('N');
-                if ($dayOfWeek > 1) { $firstMonday->modify('-' . ($dayOfWeek - 1) . ' days'); }
-                $lastSunday = clone $lastDay; if ($lastSunday->format('N') != 7) { $lastSunday->modify('next sunday'); }
-                // Limit to today to exclude future dates
-                $today = new \DateTime();
-                if ($lastSunday > $today) {
-                    $lastSunday = $today;
+                $firstMonday = clone $firstDay;
+                $dayOfWeek = $firstMonday->format('N');
+                if ($dayOfWeek > 1) {
+                    $firstMonday->modify('-' . ($dayOfWeek - 1) . ' days');
                 }
 
-                $query = $this->db->query(
-                    "SELECT
-                        YEARWEEK(preferred_date, 1) as week,
-                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                        SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled,
-                        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as feedback_pending,
-                        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
-                    FROM appointments
-                    WHERE preferred_date BETWEEN ? AND ?" . $counselorFilter . "
-                    GROUP BY YEARWEEK(preferred_date, 1)
-                    ORDER BY YEARWEEK(preferred_date, 1)",
-                    [$firstMonday->format('Y-m-d'), $lastSunday->format('Y-m-d')]
-                );
+                $lastSunday = clone $lastDay;
+                $lastDayOfWeek = $lastSunday->format('N');
+                if ($lastDayOfWeek < 7) {
+                    $lastSunday->modify('+' . (7 - $lastDayOfWeek) . ' days');
+                }
 
+                $query = $this->db->query("
+                    WITH RECURSIVE dates AS (
+                        SELECT ? as date
+                        UNION ALL
+                        SELECT DATE_ADD(date, INTERVAL 1 DAY)
+                        FROM dates
+                        WHERE DATE_ADD(date, INTERVAL 1 DAY) <= ?
+                    ),
+                    weeks AS (
+                        SELECT
+                            MIN(d.date) as week_start,
+                            DATE_ADD(MIN(d.date), INTERVAL 6 DAY) as week_end
+                        FROM dates d
+                        GROUP BY YEARWEEK(d.date, 1)
+                    )
+                    SELECT
+                        w.week_start,
+                        w.week_end,
+                        COUNT(DISTINCT CASE
+                            WHEN a.status = 'completed' AND {$feedbackSubmittedSql}
+                            THEN a.id END) as completed,
+                        COUNT(DISTINCT CASE WHEN a.status = 'approved' THEN a.id END) as approved,
+                        COUNT(DISTINCT CASE WHEN a.status = 'rejected' THEN a.id END) as rejected,
+                        COUNT(DISTINCT CASE WHEN a.status = 'pending' THEN a.id END) as pending,
+                        COUNT(DISTINCT CASE WHEN {$feedbackPendingSql} THEN a.id END) as feedback_pending,
+                        COUNT(DISTINCT CASE WHEN a.status = 'rescheduled' THEN a.id END) as rescheduled
+                    FROM weeks w
+                    LEFT JOIN appointments a ON a.preferred_date BETWEEN w.week_start AND w.week_end{$counselorFilterA}
+                    GROUP BY w.week_start, w.week_end
+                    ORDER BY w.week_start
+                ", [$firstMonday->format('Y-m-d'), $lastSunday->format('Y-m-d')]);
+
+                $weekCount = 1;
                 $weekStarts = [];
                 foreach ($query->getResult() as $row) {
-                    $labels[] = 'Week ' . substr($row->week, -2);
-                    $completed[] = (int)$row->completed;
-                    $approved[] = (int)$row->approved;
-                    $rescheduled[] = (int)$row->rescheduled;
-                    $pending[] = (int)$row->pending;
-                    $feedback_pending[] = (int)$row->feedback_pending;
-                    $cancelled[] = (int)$row->cancelled;
-                    // compute actual monday for index mapping
-                    $y = substr($row->week, 0, 4);
-                    $w = substr($row->week, -2);
-                    $monday = new \DateTime();
-                    $monday->setISODate((int)$y, (int)$w);
-                    $weekStarts[] = $monday->format('Y-m-d');
+                    $weekStart = new \DateTime($row->week_start);
+                    $weekEnd = new \DateTime($row->week_end);
+
+                    $labels[] = 'Week ' . $weekCount . ' (' .
+                        $weekStart->format('M j') . '-' .
+                        $weekEnd->format('j') . ')';
+
+                    $completed[] = (int) $row->completed;
+                    $approved[] = (int) $row->approved;
+                    $rejected[] = (int) $row->rejected;
+                    $pending[] = (int) $row->pending;
+                    $feedback_pending[] = (int) $row->feedback_pending;
+                    $rescheduled[] = (int) $row->rescheduled;
+
+                    $weekStarts[] = $weekStart->format('Y-m-d');
+                    $weekCount++;
                 }
 
-                // Bucket counselor follow-ups by week
                 $fuAll = $this->db->query(
-                    "SELECT preferred_date, status FROM follow_up_appointments WHERE counselor_id = ? AND preferred_date BETWEEN ? AND ?",
+                    'SELECT preferred_date, status FROM follow_up_appointments WHERE counselor_id = ? AND preferred_date BETWEEN ? AND ?',
                     [$counselor_id, $firstMonday->format('Y-m-d'), $lastSunday->format('Y-m-d')]
                 )->getResultArray();
+
                 foreach ($fuAll as $fuRow) {
                     $d = new \DateTime($fuRow['preferred_date']);
-                    while ($d->format('N') != 1) { $d->modify('-1 day'); }
+                    while ($d->format('N') != 1) {
+                        $d->modify('-1 day');
+                    }
                     $wkStart = $d->format('Y-m-d');
-                    $idx = array_search($wkStart, $weekStarts);
-                    if ($idx === false) continue;
+                    $idx = array_search($wkStart, $weekStarts, true);
+                    if ($idx === false) {
+                        continue;
+                    }
                     $st = strtolower($fuRow['status']);
-                    if ($st === 'completed') $completed[$idx]++;
-                    if ($st === 'pending') $pending[$idx]++;
-                    if ($st === 'cancelled') $cancelled[$idx]++;
+                    if ($st === 'completed') {
+                        $completed[$idx]++;
+                    }
+                    if ($st === 'pending') {
+                        $pending[$idx]++;
+                    }
+                    if ($st === 'feedback_pending') {
+                        $feedback_pending[$idx]++;
+                    }
                 }
             } elseif ($reportType === 'yearly') {
-                // Aggregate by year for counselor
-                $query = $this->db->query(
-                    "SELECT
+                $selectedYear = (int) date('Y', strtotime($month . '-01'));
+
+                $query = $this->db->query("
+                    SELECT
                         YEAR(preferred_date) as year,
-                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                        SUM(CASE
+                            WHEN status = 'completed' AND {$feedbackSubmittedSqlNoAlias}
+                            THEN 1 ELSE 0
+                        END) as completed,
                         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                        SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled,
+                        SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as feedback_pending,
-                        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+                        SUM(CASE WHEN {$feedbackPendingSqlNoAlias} THEN 1 ELSE 0 END) as feedback_pending,
+                        SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled
                     FROM appointments
-                    WHERE YEAR(preferred_date) BETWEEN 2023 AND YEAR(CURDATE())" . $counselorFilter . "
+                    WHERE YEAR(preferred_date) = ?{$counselorFilter}
                     GROUP BY YEAR(preferred_date)
-                    ORDER BY YEAR(preferred_date)"
-                );
+                    ORDER BY YEAR(preferred_date)
+                ", [$selectedYear]);
 
                 foreach ($query->getResult() as $row) {
                     $labels[] = $row->year;
-                    $completed[] = (int)$row->completed;
-                    $approved[] = (int)$row->approved;
-                    $rescheduled[] = (int)$row->rescheduled;
-                    $pending[] = (int)$row->pending;
-                    $feedback_pending[] = (int)$row->feedback_pending;
-                    $cancelled[] = (int)$row->cancelled;
+                    $completed[] = (int) $row->completed;
+                    $approved[] = (int) $row->approved;
+                    $rejected[] = (int) $row->rejected;
+                    $pending[] = (int) $row->pending;
+                    $feedback_pending[] = (int) $row->feedback_pending;
+                    $rescheduled[] = (int) $row->rescheduled;
                 }
 
-                // Add counselor follow-up yearly counts
-                $fuYears = $this->db->query(
-                    "SELECT YEAR(preferred_date) as year,
+                $fuYears = $this->db->query("
+                    SELECT YEAR(preferred_date) as year,
                            SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed,
                            SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending,
-                           SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled
-                     FROM follow_up_appointments
-                     WHERE counselor_id = ? AND YEAR(preferred_date) BETWEEN 2023 AND YEAR(CURDATE())
-                     GROUP BY YEAR(preferred_date)",
-                    [$counselor_id]
-                )->getResult();
+                           SUM(CASE WHEN status='feedback_pending' THEN 1 ELSE 0 END) as feedback_pending
+                    FROM follow_up_appointments
+                    WHERE counselor_id = ? AND YEAR(preferred_date) = ?
+                    GROUP BY YEAR(preferred_date)
+                ", [$counselor_id, $selectedYear])->getResult();
+
                 foreach ($fuYears as $row) {
-                    $idx = array_search($row->year, $labels);
-                    if ($idx === false) continue;
-                    $completed[$idx] += (int)$row->completed;
-                    $pending[$idx] += (int)$row->pending;
-                    $cancelled[$idx] += (int)$row->cancelled;
+                    $idx = array_search($row->year, $labels, true);
+                    if ($idx === false) {
+                        continue;
+                    }
+                    $completed[$idx] += (int) $row->completed;
+                    $pending[$idx] += (int) $row->pending;
+                    $feedback_pending[$idx] += (int) $row->feedback_pending;
                 }
             } else {
-                // Monthly aggregation for selected year
-                $query = $this->db->query(
-                    "SELECT
-                        MONTH(preferred_date) as month,
+                $query = $this->db->query("
+                    SELECT
+                        HOUR(STR_TO_DATE(preferred_time, '%h:%i %p')) as hour_of_day,
                         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                        SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled,
-                        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as feedback_pending,
-                        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+                        SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+                        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
                     FROM appointments
-                    WHERE YEAR(preferred_date) = ?" . $counselorFilter . "
-                    GROUP BY MONTH(preferred_date)
-                    ORDER BY MONTH(preferred_date)",
-                    [date('Y', strtotime($month . '-01'))]
-                );
+                    WHERE preferred_date BETWEEN ? AND ?{$counselorFilter}
+                    GROUP BY HOUR(STR_TO_DATE(preferred_time, '%h:%i %p'))
+                    ORDER BY hour_of_day
+                ", [$firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]);
 
-                $labels = range(1, 12);
                 foreach ($query->getResult() as $row) {
-                    $completed[$row->month - 1] = (int)$row->completed;
-                    $approved[$row->month - 1] = (int)$row->approved;
-                    $rescheduled[$row->month - 1] = (int)$row->rescheduled;
-                    $pending[$row->month - 1] = (int)$row->pending;
-                    $feedback_pending[$row->month - 1] = (int)$row->feedback_pending;
-                    $cancelled[$row->month - 1] = (int)$row->cancelled;
-                }
-
-                // Add counselor follow-up monthly counts
-                $fuMonths = $this->db->query(
-                    "SELECT MONTH(preferred_date) as month,
-                           SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed,
-                           SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending,
-                           SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled
-                     FROM follow_up_appointments
-                     WHERE counselor_id = ? AND YEAR(preferred_date) = ?
-                     GROUP BY MONTH(preferred_date)",
-                    [$counselor_id, date('Y', strtotime($month . '-01'))]
-                )->getResult();
-                foreach ($fuMonths as $row) {
-                    $idx = (int)$row->month - 1;
-                    if ($idx < 0 || $idx >= 12) continue;
-                    $completed[$idx] += (int)$row->completed;
-                    $pending[$idx] += (int)$row->pending;
-                    $cancelled[$idx] += (int)$row->cancelled;
+                    $hour = str_pad($row->hour_of_day, 2, '0', STR_PAD_LEFT);
+                    $labels[] = $hour . ':00';
+                    $completed[] = (int) $row->completed;
+                    $approved[] = (int) $row->approved;
+                    $rejected[] = (int) $row->rejected;
+                    $pending[] = (int) $row->pending;
                 }
             }
 
-            $totalQuery = $this->db->query(
-                "SELECT
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as total_completed,
-                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as total_approved,
-                    SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as total_rescheduled,
-                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
-                    SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as total_feedback_pending,
-                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as total_cancelled
-                FROM appointments
-                WHERE preferred_date BETWEEN ? AND ?" . $counselorFilter . "",
-                [$firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]
-            );
+            if ($reportType === 'yearly') {
+                $selectedYear = (int) date('Y', strtotime($month . '-01'));
+                $totalQuery = $this->db->query("
+                    SELECT
+                        SUM(CASE
+                            WHEN a.status = 'completed'
+                                 AND LOWER(REPLACE(REPLACE(COALESCE(NULLIF(sf.status, ''), NULLIF(a.student_feedback_status, ''), 'pending'), ' ', '_'), '-', '_')) IN ('submitted', 'feedback_submitted')
+                            THEN 1 ELSE 0
+                        END) as total_completed,
+                        SUM(CASE WHEN a.status = 'approved' THEN 1 ELSE 0 END) as total_approved,
+                        SUM(CASE WHEN a.status = 'rejected' THEN 1 ELSE 0 END) as total_rejected,
+                        SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as total_pending,
+                        SUM(CASE
+                            WHEN a.status = 'feedback_pending'
+                                 OR (a.status = 'completed'
+                                     AND LOWER(REPLACE(REPLACE(COALESCE(NULLIF(sf.status, ''), NULLIF(a.student_feedback_status, ''), 'pending'), ' ', '_'), '-', '_')) NOT IN ('submitted', 'feedback_submitted'))
+                            THEN 1 ELSE 0
+                        END) as total_feedback_pending,
+                        SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) as total_rescheduled
+                    FROM appointments a
+                    LEFT JOIN student_feedback sf ON sf.appointment_id = a.id
+                    WHERE YEAR(a.preferred_date) = ?{$counselorFilterA}
+                ", [$selectedYear]);
 
-            $totals = $totalQuery->getRow();
+                $totals = $totalQuery->getRow();
 
-            // Add follow-up totals
-            $fuTotals = $this->db->query(
-                "SELECT
-                    SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as total_completed,
-                    SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as total_pending,
-                    SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as total_cancelled
-                 FROM follow_up_appointments
-                 WHERE counselor_id = ? AND preferred_date BETWEEN ? AND ?",
-                [$counselor_id, $firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]
-            )->getRow();
-            $totals->total_completed += (int)($fuTotals->total_completed ?? 0);
-            $totals->total_pending += (int)($fuTotals->total_pending ?? 0);
-            $totals->total_cancelled += (int)($fuTotals->total_cancelled ?? 0);
+                $fuTotals = $this->db->query("
+                    SELECT
+                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as total_completed,
+                        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
+                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as total_feedback_pending
+                    FROM follow_up_appointments
+                    WHERE counselor_id = ? AND YEAR(preferred_date) = ?
+                ", [$counselor_id, $selectedYear])->getRow();
+            } else {
+                $totalQuery = $this->db->query("
+                    SELECT
+                        SUM(CASE
+                            WHEN a.status = 'completed'
+                                 AND LOWER(REPLACE(REPLACE(COALESCE(NULLIF(sf.status, ''), NULLIF(a.student_feedback_status, ''), 'pending'), ' ', '_'), '-', '_')) IN ('submitted', 'feedback_submitted')
+                            THEN 1 ELSE 0
+                        END) as total_completed,
+                        SUM(CASE WHEN a.status = 'approved' THEN 1 ELSE 0 END) as total_approved,
+                        SUM(CASE WHEN a.status = 'rejected' THEN 1 ELSE 0 END) as total_rejected,
+                        SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as total_pending,
+                        SUM(CASE
+                            WHEN a.status = 'feedback_pending'
+                                 OR (a.status = 'completed'
+                                     AND LOWER(REPLACE(REPLACE(COALESCE(NULLIF(sf.status, ''), NULLIF(a.student_feedback_status, ''), 'pending'), ' ', '_'), '-', '_')) NOT IN ('submitted', 'feedback_submitted'))
+                            THEN 1 ELSE 0
+                        END) as total_feedback_pending,
+                        SUM(CASE WHEN a.status = 'rescheduled' THEN 1 ELSE 0 END) as total_rescheduled
+                    FROM appointments a
+                    LEFT JOIN student_feedback sf ON sf.appointment_id = a.id
+                    WHERE a.preferred_date BETWEEN ? AND ?{$counselorFilterA}
+                ", [$firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')]);
+
+                $totals = $totalQuery->getRow();
+
+                $fuTotals = $this->db->query("
+                    SELECT
+                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as total_completed,
+                        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
+                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as total_feedback_pending
+                    FROM follow_up_appointments
+                    WHERE counselor_id = ? AND preferred_date BETWEEN ? AND ?
+                ", [$counselor_id, $firstDay->format('Y-m-d'), $lastDay->format('Y-m-d')])->getRow();
+            }
+
+            $totals->total_completed += (int) ($fuTotals->total_completed ?? 0);
+            $totals->total_pending += (int) ($fuTotals->total_pending ?? 0);
+            $totals->total_feedback_pending += (int) ($fuTotals->total_feedback_pending ?? 0);
 
             return $this->response->setJSON([
                 'labels' => $labels,
                 'completed' => $completed,
                 'approved' => $approved,
-                'rescheduled' => $rescheduled,
+                'rejected' => $rejected,
                 'pending' => $pending,
                 'feedback_pending' => $feedback_pending,
-                'cancelled' => $cancelled,
-                'totalCompleted' => (int)$totals->total_completed,
-                'totalApproved' => (int)$totals->total_approved,
-                'totalRescheduled' => (int)$totals->total_rescheduled,
-                'totalPending' => (int)$totals->total_pending,
-                'totalFeedbackPending' => (int)$totals->total_feedback_pending,
-                'totalCancelled' => (int)$totals->total_cancelled
+                'rescheduled' => $rescheduled,
+                'totalCompleted' => (int) $totals->total_completed,
+                'totalApproved' => (int) $totals->total_approved,
+                'totalRejected' => (int) $totals->total_rejected,
+                'totalPending' => (int) $totals->total_pending,
+                'totalFeedbackPending' => (int) $totals->total_feedback_pending,
+                'totalRescheduled' => (int) ($totals->total_rescheduled ?? 0),
             ]);
         } catch (\Exception $e) {
-            return $this->response->setStatusCode(500)->setJSON(['error' => 'Server error: ' . $e->getMessage()]);
+            return $this->response->setStatusCode(500)->setJSON([
+                'error' => 'Server error: ' . $e->getMessage(),
+            ]);
         }
     }
 }
-
-
-

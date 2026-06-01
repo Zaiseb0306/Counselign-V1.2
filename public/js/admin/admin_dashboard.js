@@ -47,25 +47,18 @@ document.addEventListener('DOMContentLoaded', function () {
 // Load appointments with current filters
 function loadAppointments() {
     // Show loading indicator
-    document.getElementById('appointments-table-body').innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
-
-    // Build the query URL with filters
-    let url = '../includes/get_appointments.php?';
-
-    if (currentFilters.status && currentFilters.status !== 'all') {
-        url += `status=${encodeURIComponent(currentFilters.status)}&`;
+    const tableBody = document.getElementById('appointments-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="16" class="text-center">Loading...</td></tr>';
     }
 
-    if (currentFilters.dateFrom) {
-        url += `date_from=${encodeURIComponent(currentFilters.dateFrom)}&`;
-    }
+    const headers = {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+    };
+    const ciUrl = (window.BASE_URL || '/') + 'admin/appointments/getAll?timeRange=weekly&_=' + Date.now();
 
-    if (currentFilters.dateTo) {
-        url += `date_to=${encodeURIComponent(currentFilters.dateTo)}&`;
-    }
-
-    // Fetch data from server
-    fetch(url)
+    fetch(ciUrl, { method: 'GET', credentials: 'include', headers })
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -73,20 +66,34 @@ function loadAppointments() {
             return response.json();
         })
         .then(data => {
-            appointmentsData = data;
-            renderAppointmentsTable(appointmentsData);
-            updateAppointmentStats(appointmentsData);
+            if (data.status === 'success' && Array.isArray(data.appointments)) {
+                appointmentsData = data.appointments;
+                renderAppointmentsTable(appointmentsData);
+                updateAppointmentStats(appointmentsData);
+            } else {
+                throw new Error(data.message || 'Failed to load appointments');
+            }
         })
         .catch(error => {
             console.error('Error fetching appointments:', error);
-            document.getElementById('appointments-table-body').innerHTML =
-                '<tr><td colspan="6" class="text-center text-danger">Error loading appointments. Please try again.</td></tr>';
+            if (tableBody) {
+                tableBody.innerHTML =
+                    '<tr><td colspan="16" class="text-center text-danger">Error loading appointments. Please try again.</td></tr>';
+            }
         });
 }
 
 // Render appointments table
 function renderAppointmentsTable(appointments) {
     const tableBody = document.getElementById('appointments-table-body');
+
+    // Check if mobile device
+    const isMobile = window.innerWidth <= 575.98;
+
+    if (isMobile) {
+        renderAppointmentCards(appointments);
+        return;
+    }
 
     if (appointments.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No appointments found</td></tr>';
@@ -151,6 +158,86 @@ function renderAppointmentsTable(appointments) {
     });
 }
 
+// Render appointment cards for mobile
+function renderAppointmentCards(appointments) {
+    const tableShell = document.querySelector('.rpt-table-shell');
+    let cardContainer = document.querySelector('.mobile-card-container');
+
+    // Create card container if it doesn't exist
+    if (!cardContainer) {
+        cardContainer = document.createElement('div');
+        cardContainer.className = 'mobile-card-container';
+        tableShell.appendChild(cardContainer);
+    }
+
+    if (appointments.length === 0) {
+        cardContainer.innerHTML = '<div class="text-center text-muted py-4">No appointments found</div>';
+        return;
+    }
+
+    cardContainer.innerHTML = '';
+
+    appointments.forEach(appointment => {
+        const appointmentDate = new Date(appointment.appointment_date);
+        const formattedDate = appointmentDate.toLocaleDateString();
+
+        let statusColor = '';
+        switch (appointment.status) {
+            case 'Pending':
+                statusColor = '#f59e0b';
+                break;
+            case 'Approved':
+                statusColor = '#060E57';
+                break;
+            case 'Completed':
+                statusColor = '#10b981';
+                break;
+            case 'Cancelled':
+                statusColor = '#ef4444';
+                break;
+            case 'Rescheduled':
+                statusColor = '#3b82f6';
+                break;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'appointment-card';
+        card.innerHTML = `
+            <div class="appointment-card-header">
+                <span class="appointment-card-name">${appointment.user_name}</span>
+                <span class="appointment-card-status" style="background: ${statusColor}20; color: ${statusColor}">${appointment.status}</span>
+            </div>
+            <div class="appointment-card-body">
+                <div class="appointment-card-row">
+                    <span class="appointment-card-label">Date</span>
+                    <span class="appointment-card-value">${formattedDate}</span>
+                </div>
+                <div class="appointment-card-row">
+                    <span class="appointment-card-label">Time</span>
+                    <span class="appointment-card-value">${appointment.appointment_time}</span>
+                </div>
+                <div class="appointment-card-row">
+                    <span class="appointment-card-label">ID</span>
+                    <span class="appointment-card-value">${appointment.appointment_id}</span>
+                </div>
+            </div>
+            <div class="appointment-card-actions">
+                <button class="appointment-card-btn appointment-card-btn-primary" onclick="viewAppointmentDetails(${appointment.appointment_id})">View Details</button>
+                <button class="appointment-card-btn appointment-card-btn-secondary" onclick="updateAppointmentStatus(${appointment.appointment_id}, 'Approved')">Approve</button>
+            </div>
+        `;
+
+        cardContainer.appendChild(card);
+    });
+}
+
+// Handle window resize to switch between table and card views
+window.addEventListener('resize', function() {
+    if (appointmentsData && appointmentsData.length > 0) {
+        renderAppointmentsTable(appointmentsData);
+    }
+});
+
 // Update appointment status
 function updateAppointmentStatus(appointmentId, newStatus) {
     if (!confirm(`Are you sure you want to change this appointment status to "${newStatus}"?`)) {
@@ -158,18 +245,14 @@ function updateAppointmentStatus(appointmentId, newStatus) {
     }
 
     // Prepare request body
-    const requestBody = {
-        appointment_id: appointmentId,
-        status: newStatus
-    };
+    const formData = new FormData();
+    formData.append('appointment_id', appointmentId);
+    formData.append('status', newStatus);
 
     // Send update request
-    fetch((window.BASE_URL || '/') + 'admin/update_appointment', {
+    fetch((window.BASE_URL || '/') + 'admin/appointments/updateAppointmentStatus', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
+        body: formData
     })
         .then(response => {
             if (!response.ok) {
@@ -178,14 +261,14 @@ function updateAppointmentStatus(appointmentId, newStatus) {
             return response.json();
         })
         .then(data => {
-            if (data.success) {
+            if (data.status === 'success') {
                 // Show success message
                 showNotification('Success!', `Appointment status updated to ${newStatus}`, 'success');
 
                 // Reload appointments to reflect changes
                 loadAppointments();
             } else {
-                throw new Error(data.error || 'Unknown error occurred');
+                throw new Error(data.message || 'Unknown error occurred');
             }
         })
         .catch(error => {
@@ -321,7 +404,6 @@ function showNotification(title, message, type) {
     }
 }
 
-// Function to redirect to profile page
 function redirectToProfilePage() {
     window.location.href = (window.BASE_URL || '/') + 'admin/admins-management';
 }
@@ -345,7 +427,11 @@ function loadAdminData() {
     SecureLogger.info('Loading admin data...');
     fetch((window.BASE_URL || '/') + 'admin/dashboard/data', {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
         .then(response => {
             SecureLogger.info('Response status:', response.status);
@@ -366,25 +452,37 @@ function loadAdminData() {
                 SecureLogger.info('Admin data:', adminData);
 
                 // Update profile picture
-                const profileImg = document.getElementById('profile-img');
-                if (profileImg && adminData.profile_picture) {
+                const profileImgTop = document.getElementById('profile-img-top');
+                const profileImgDropdown = document.getElementById('profile-img-dropdown');
+                if (profileImgTop && adminData.profile_picture) {
                     SecureLogger.info('Updating profile picture:', adminData.profile_picture);
-                    profileImg.src = adminData.profile_picture;
+                    profileImgTop.src = adminData.profile_picture;
+                }
+                if (profileImgDropdown && adminData.profile_picture) {
+                    profileImgDropdown.src = adminData.profile_picture;
                 }
 
                 // Update admin name
                 const adminName = document.getElementById('adminName');
+                const uniNameTop = document.getElementById('uniNameTop');
+                const uniNameDropdown = document.getElementById('uniNameDropdown');
                 if (adminName) {
                     SecureLogger.info('Updating admin name:', adminData.username);
                     adminName.textContent = adminData.username || 'Admin';
                 }
+                if (uniNameTop) {
+                    uniNameTop.textContent = adminData.username || 'Admin';
+                }
+                if (uniNameDropdown) {
+                    uniNameDropdown.textContent = adminData.username || 'Admin';
+                }
 
                 // Update last login time
-                const lastLogin = document.getElementById('lastLogin');
-                if (lastLogin) {
+                const lastLoginDropdown = document.getElementById('lastLoginDropdown');
+                if (lastLoginDropdown) {
                     const formattedTime = formatDateTime(adminData.last_login);
                     SecureLogger.info('Updating last login:', formattedTime);
-                    lastLogin.textContent = 'Login at: ' + formattedTime;
+                    lastLoginDropdown.textContent = 'Last login: ' + formattedTime;
                 }
             } else {
                 console.error('Failed to load admin data:', data.message);
@@ -395,9 +493,8 @@ function loadAdminData() {
         });
 }
 
-// Refresh admin data periodically (every 5 minutes)
-setInterval(loadAdminData, 300000);
-
+// Refresh admin data periodically (every 1 minute)
+setInterval(loadAdminData, 60000);
 
 function updateMessagesBadge(count) {
     const badge = document.getElementById('messagesBadge');
@@ -419,7 +516,11 @@ function updateMessagesBadge(count) {
 
 function updateMessagesBadgeFromServer() {
     fetch((window.BASE_URL || '/') + 'admin/message/operations?action=get_conversations', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
         .then(response => response.json())
         .then(data => {
@@ -429,14 +530,18 @@ function updateMessagesBadgeFromServer() {
             }
         })
         .catch(err => {
-            // Optionally log error
+            console.error('Error fetching conversation count:', err);
         });
 }
 
 function updateRecentMessages() {
     SecureLogger.info('Updating recent messages...');
     fetch((window.BASE_URL || '/') + 'admin/message/operations?action=get_conversations', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
         .then(response => response.json())
         .then(data => {
@@ -514,7 +619,5 @@ function updateRecentMessages() {
         });
 }
 
-// Call this function to initialize
-updateRecentMessages();
 // Set interval to update every 30 seconds
 setInterval(updateRecentMessages, 30000);

@@ -8,15 +8,22 @@
     <meta name="keywords" content="counseling, guidance, university, support, mental health, student wellness" />
     <title>Schedule Appointment - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="<?= base_url('css/student/student_schedule_appointment.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_schedule_appointment.css?v=3') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_vibe_shared.css?v=1') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+
     <link rel="stylesheet" href="<?= base_url('css/utils/customCalendarPicker.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
 </head>
 
-<body>
+<body class="ssa-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -78,10 +85,11 @@
             <div class="top-bar-right">
 
                 <button class="top-bar-btn" onclick="window.location.href='<?= base_url('student/my-appointments') ?>'" title="My Appointments">
-                    <i class="fa fa-list-alt text-2xl" style="cursor: pointer;"></i>
+                    <i class="fas fa-list-alt" aria-hidden="true"></i>
                     <span class="btn-label">My Appointments</span>
                 </button>
 
+                <?= view('student/partials/header_actions') ?>
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
                     <button class="top-bar-btn profile-btn" id="profileDropdownBtn">
@@ -186,9 +194,6 @@
                                 </label>
                                 <select id="methodType" name="methodType" class="form-control" required>
                                     <option value="">Select a method type</option>
-                                    <option>In-person</option>
-                                    <option>Online (Video)</option>
-                                    <option>Online (Audio only)</option>
                                 </select>
                             </div>
 
@@ -198,9 +203,6 @@
                                 </label>
                                 <select id="purpose" name="purpose" class="form-control" required>
                                     <option value="">Select the purpose of your consultation</option>
-                                    <option value="Counseling">Counseling</option>
-                                    <option value="Psycho-Social Support">Psycho-Social Support</option>
-                                    <option value="Initial Interview">Initial Interview</option>
                                 </select>
                             </div>
 
@@ -387,12 +389,14 @@
 
     <?php echo view('modals/student_dashboard_modals'); ?>
     <script src="<?= base_url('js/modals/student_dashboard_modals.js') ?>"></script>
+    <?= view('student/partials/notifications_dropdown') ?>
     <script src="<?= base_url('js/utils/timeFormatter.js') ?>"></script>
     <script src="<?= base_url('js/student/student_header_drawer.js') ?>"></script>
     <script src="<?= base_url('js/utils/customCalendarPicker.js') ?>"></script>
     <script src="<?= base_url('js/student/student_schedule_appointment.js') ?>" defer></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/student/logout.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js?v=3') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>

@@ -10,13 +10,19 @@
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= base_url('css/counselor/counselor_announcements.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/counselor/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+
+    <link rel="stylesheet" href="<?= base_url('css/counselor/counselor_vibe_shared.css?v=5') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
 </head>
 
-<body>
+<body class="ann-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -39,6 +45,10 @@
                 <a href="<?= base_url('counselor/pending-feedback') ?>" class="sidebar-link" title="Pending Feedback">
                     <i class="fas fa-star"></i>
                     <span class="sidebar-text">Pending Feedback</span>
+                </a>
+                <a href="<?= base_url('counselor/pending-feedback/view-feedback') ?>" class="sidebar-link" title="View Feedback">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-text">View Feedback</span>
                 </a>
                 <a href="<?= base_url('counselor/follow-up') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-clipboard-list"></i>
@@ -78,6 +88,8 @@
 
             <div class="top-bar-right">
 
+                <?= view('counselor/partials/notification_bell') ?>
+
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
                     <button class="top-bar-btn profile-btn" id="profileDropdownBtn">
@@ -107,47 +119,107 @@
                 </div>
             </div>
         </header>
-        <main>
-            <!-- Announcements and Events Section -->
-            <div class="announcements-container">
-                <h2 class="section-title">Announcements and Events</h2>
+        <main class="appt-page ann-page">
+            <div class="container-fluid px-4 ann-container">
 
-                <!-- Announcements Section -->
-                <div class="announcements-section">
-                    <h3 class="subsection-title">Announcements</h3>
-                    <div class="scrollable-container">
-                        <div class="announcements-list" id="announcementsList">
-                            <!-- Announcements will be dynamically loaded here -->
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Inline Calendar Section -->
-                <div class="calendar-section">
-                    <h3 class="subsection-title">Calendar</h3>
-                    <div class="calendar-container">
-                        <div class="calendar-header">
-                            <button id="prevMonth" class="calendar-nav-btn">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <h4 id="currentMonth" class="calendar-month"></h4>
-                            <button id="nextMonth" class="calendar-nav-btn">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
+                <section class="stats-summary ann-stats" aria-label="Announcements statistics">
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-bullhorn text-primary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statAnnouncementsCount">-</h3>
+                            <p>Announcements</p>
                         </div>
-                        <div class="calendar-grid" id="calendarGrid">
-                            <!-- Calendar will be dynamically generated here -->
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-calendar-check text-success"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statEventsCount">-</h3>
+                            <p>Total Events</p>
                         </div>
-                    </div>
-                </div>
+                    </article>
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-hourglass-half text-danger"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statUpcomingCount">-</h3>
+                            <p>Upcoming</p>
+                        </div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-calendar-day text-secondary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statMonthEventsCount">-</h3>
+                            <p>This Month</p>
+                        </div>
+                    </article>
+                </section>
 
-                <!-- Upcoming Events List (full width) -->
-                <div class="upcoming-events-section">
-                    <h3 class="subsection-title">Upcoming Events</h3>
-                    <div class="scrollable-container">
-                        <div class="events-list" id="eventsList">
-                            <!-- Events will be dynamically loaded here -->
+                <div class="announcements-container ann-layout">
+                    <section class="ann-panel announcements-section ann-announcements-panel">
+                        <header class="ann-panel-header">
+                            <h3 class="subsection-title mb-0">
+                                <i class="fas fa-bullhorn me-2"></i>Announcements
+                            </h3>
+                        </header>
+                        <div id="annAnnouncementsLoading" class="appt-state appt-loading">
+                            <div class="appt-loader" role="status" aria-label="Loading announcements">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <p>Loading announcements...</p>
                         </div>
+                        <div class="scrollable-container ann-scroll">
+                            <div class="announcements-list" id="announcementsList"></div>
+                        </div>
+                        <div id="noAnnouncements" class="appt-state appt-empty ann-empty" style="display: none;">
+                            <div class="appt-empty-icon"><i class="fas fa-bullhorn"></i></div>
+                            <h4>No announcements</h4>
+                            <p>There are no announcements available right now.</p>
+                        </div>
+                    </section>
+
+                    <div class="ann-sidebar">
+                        <section class="ann-panel calendar-section ann-calendar-panel">
+                            <header class="ann-panel-header ann-panel-header-compact">
+                                <h3 class="subsection-title mb-0">
+                                    <i class="fas fa-calendar-alt me-2"></i>Calendar
+                                </h3>
+                            </header>
+                            <div class="calendar-container">
+                                <div class="calendar-header">
+                                    <button id="prevMonth" class="calendar-nav-btn" type="button" aria-label="Previous month">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <h4 id="currentMonth" class="calendar-month"></h4>
+                                    <button id="nextMonth" class="calendar-nav-btn" type="button" aria-label="Next month">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div class="calendar-grid" id="calendarGrid"></div>
+                            </div>
+                        </section>
+
+                        <section class="ann-panel upcoming-events-section ann-events-panel">
+                            <header class="ann-panel-header">
+                                <h3 class="subsection-title mb-0">
+                                    <i class="fas fa-calendar-week me-2"></i>Upcoming Events
+                                </h3>
+                                <p class="ann-panel-hint">Scheduled counseling events</p>
+                            </header>
+                            <div id="annEventsLoading" class="appt-state appt-loading">
+                                <div class="appt-loader" role="status" aria-label="Loading events">
+                                    <span></span><span></span><span></span>
+                                </div>
+                                <p>Loading events...</p>
+                            </div>
+                            <div class="scrollable-container ann-scroll">
+                                <div class="events-list" id="eventsList"></div>
+                            </div>
+                            <div id="noEvents" class="appt-state appt-empty ann-empty" style="display: none;">
+                                <div class="appt-empty-icon"><i class="fas fa-calendar-times"></i></div>
+                                <h4>No events scheduled</h4>
+                                <p>There are no upcoming events on the calendar.</p>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
@@ -155,11 +227,12 @@
     </div>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+    <?= view('counselor/partials/notifications_dropdown') ?>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= base_url('js/counselor/counselor_notifications_dropdown.js?v=3') ?>"></script>
     <script src="<?= base_url('js/counselor/counselor_announcements.js') ?>" defer></script>
     <script src="<?= base_url('js/counselor/counselor_drawer.js') ?>"></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>

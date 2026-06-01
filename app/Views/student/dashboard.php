@@ -7,17 +7,24 @@
     <meta name="description" content="University Guidance Counseling Services - Your safe space for support and guidance" />
     <meta name="keywords" content="counseling, guidance, university, support, mental health, student wellness" />
     <title>Counselign</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="<?= base_url('css/student/student_dashboard.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_dashboard.css?v=5') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_vibe_shared.css?v=1') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/resources.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
+
     
 </head>
 
-<body>
+<body class="sd-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -78,20 +85,7 @@
 
             <div class="top-bar-right">
 
-                <div class="message-icon-container">
-                    <button class="top-bar-btn" onclick="window.location.href='<?= base_url('student/messages') ?>'" title="Messages">
-
-                        <i class="fas fa-comments text-2xl" style="cursor: pointer;"></i>
-                        <span id="messageBadge" class="message-badge hidden"></span>
-
-                    </button>
-                </div>
-                <div class="relative notification-icon-container">
-                    <button class="top-bar-btn" id="notificationIcon" title="Notifications">
-                        <i class="fas fa-bell text-2xl" style="cursor: pointer;"></i>
-                        <span id="notificationBadge" class="notification-badge">0</span>
-                    </button>
-                </div>
+                <?= view('student/partials/header_actions') ?>
 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
@@ -123,7 +117,9 @@
             </div>
         </header>
 
-        <div class="dashboard-enhanced-content">
+        <div class="dashboard-enhanced-content sd-container">
+            
+
             <!-- Events Carousel -->
             <section class="carousel-section" id="eventsCarouselSection">
                 <div class="carousel-header">
@@ -216,24 +212,7 @@
             </section>
         </div>
 
-        <!-- Notifications Dropdown -->
-        <div id="notificationsDropdown" class="absolute bg-white rounded-lg shadow-lg border" >
-            <div class="p-3 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-blue-800">Notifications</h3>
-                <div class="d-flex gap-2">
-                    <button id="seeHistoryBtn" class="btn btn-sm btn-outline-secondary" title="See History">
-                        <i class="fas fa-history"></i> History
-                    </button>
-                    <button id="markAllReadBtn" class="btn btn-sm btn-outline-primary" title="Mark all as read">
-                        <i class="fas fa-check-double"></i> Clear All
-                    </button>
-                </div>
-            </div>
-            <div class="notifications-list max-h-64 overflow-y-auto">
-                <!-- Notifications will be dynamically populated here -->
-            </div>
-        </div>
-
+    <?= view('student/partials/notifications_dropdown') ?>
 
     </div>
 
@@ -325,15 +304,17 @@
     <script src="<?= base_url('js/utils/resource-preview.js') ?>"></script>
 
     <?php echo view('modals/student_dashboard_modals'); ?>
+    <script>
+        // Must be defined before student JS runs
+        window.BASE_URL = "<?= base_url() ?>";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= base_url('js/modals/student_dashboard_modals.js') ?>"></script>
+    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js') ?>?v=3"></script>
     <script src="<?= base_url('js/student/student_dashboard.js') ?>"></script>
     <script src="<?= base_url('js/student/logout.js') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
-    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        window.BASE_URL = "<?= base_url() ?>";
-    </script>
 </body>
 
 </html>

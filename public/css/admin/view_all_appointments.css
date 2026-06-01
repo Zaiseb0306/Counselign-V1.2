@@ -414,13 +414,52 @@ body {
 }
 
 .badge-pending {
-    background-color: #ffc107;
-    color: #060E57;
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-feedback-pending {
+    background-color: #6c757d;
+    color: white;
 }
 
 .badge-cancelled {
     background-color: #6c757d;
     color: white;
+}
+
+.badge-rescheduled {
+    background-color: #fd7e14;
+    color: white;
+}
+
+/* Mobile Status Cards Layout */
+@media (max-width: 576px) {
+    .status-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        justify-items: center;
+        align-items: stretch;
+    }
+
+    .status-cards .col-sm-6 {
+        width: 100%;
+        max-width: 200px;
+        height: 100%;
+    }
+
+    .status-cards .status-card {
+        height: 100%;
+        min-height: 120px;
+    }
+
+    /* Center the last item if it's alone in the row */
+    .status-cards .status-card:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+        justify-self: center;
+        max-width: 200px;
+    }
 }
 
 /* Mobile Responsive Adjustments */
@@ -486,8 +525,13 @@ body {
 }
 
 .badge-pending {
-    background-color: #ffc107;
-    color: #060E57;
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-feedback-pending {
+    background-color: #6c757d;
+    color: white;
 }
 
 .badge-cancelled {
@@ -496,8 +540,8 @@ body {
 }
 
 .badge-rescheduled {
-    background-color: #ffc107;
-    color: #060E57;
+    background-color: #fd7e14;
+    color: white;
 }
 
 /* Loading Spinner */
@@ -794,4 +838,775 @@ footer {
         margin-right: 15px;
         width: calc(100% - 30px);
     }
+}
+
+/* Desktop toolbar visible lg+ only (mobile uses appointment-filters) */
+.adm-dash-page .adm-rpt-toolbar-desktop {
+    display: none;
+}
+
+@media (min-width: 992px) {
+    .adm-dash-page .adm-rpt-toolbar-desktop {
+        display: grid !important;
+    }
+}
+
+.adm-dash-page .appointment-container.va-appointments-panel {
+    padding: 0 !important;
+    max-width: none;
+    margin-top: 1rem;
+}
+
+/* Admin dashboard appointments table — counselor design */
+/* ═══════════════════════════════════════════════════════════════
+   Appointments table — vibe redesign (overrides legacy rules above)
+   ═══════════════════════════════════════════════════════════════ */
+
+.adm-dash-page .va-appointments-panel {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.adm-dash-page .va-panel-header.rpt-panel-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(180deg, #fafbfd 0%, #f4f6fa 100%);
+    border-bottom: 1px solid var(--appt-border);
+}
+
+.adm-dash-page .va-panel-header-text .rpt-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--appt-navy);
+    display: flex;
+    align-items: center;
+}
+
+.adm-dash-page .va-panel-header-text .rpt-section-title i {
+    color: #3b82f6;
+}
+
+.adm-dash-page .va-panel-sub {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--appt-muted);
+}
+
+/* Scrollable status tabs */
+.adm-dash-page .rpt-appt-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.4rem;
+    padding: 0.85rem 1.25rem 0;
+    margin-bottom: 0 !important;
+    border-bottom: 1px solid var(--appt-border);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.adm-dash-page .rpt-appt-tabs .nav-item {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.adm-dash-page .rpt-appt-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    border: 1px solid var(--appt-border) !important;
+    border-radius: 999px !important;
+    padding: 0.45rem 0.85rem !important;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--appt-muted) !important;
+    background: #fff !important;
+    margin-bottom: 0.5rem;
+}
+
+.adm-dash-page .rpt-appt-tabs .nav-link.active {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, #2563eb 100%) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 14px rgba(6, 14, 87, 0.22);
+}
+
+.adm-dash-page .rpt-appt-tabs .nav-link i {
+    font-size: 0.85rem;
+}
+
+/* Toolbar */
+.adm-dash-page .rpt-toolbar.va-toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.85rem 1rem;
+    align-items: end;
+    padding: 1rem 1.25rem 1.15rem;
+    border-bottom: 1px solid var(--appt-border);
+    background: #fff;
+}
+
+.adm-dash-page .rpt-toolbar-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--appt-muted);
+    margin-bottom: 0.35rem;
+}
+
+.adm-dash-page .rpt-input-group .input-group-text {
+    background: #f8fafc;
+    border-color: #dde3ef;
+    color: var(--appt-navy);
+}
+
+.adm-dash-page .rpt-input-group .form-control {
+    border-color: #dde3ef;
+    font-size: 0.875rem;
+}
+
+.adm-dash-page .rpt-input-group .form-control:focus {
+    border-color: var(--appt-navy);
+    box-shadow: 0 0 0 3px rgba(6, 14, 87, 0.1);
+}
+
+.adm-dash-page .rpt-toolbar-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.adm-dash-page .rpt-btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    border: none;
+    color: #fff;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.adm-dash-page .rpt-btn-export:hover {
+    transform: translateY(-1px);
+    color: #fff;
+}
+
+.adm-dash-page .rpt-btn-pdf {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.adm-dash-page .rpt-btn-excel {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+/* Table shell — border on scroll area only (avoids L-shaped corner artifact) */
+.adm-dash-page .rpt-table-shell {
+    margin: 0 1.25rem 1.25rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+    box-shadow: none;
+}
+
+.adm-dash-page .rpt-table-scroll {
+    max-height: min(520px, 58vh);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--appt-border);
+    border-radius: var(--appt-radius-sm);
+    background: #fff;
+    box-shadow: inset 0 1px 0 rgba(6, 14, 87, 0.04);
+}
+
+.adm-dash-page .rpt-table-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.adm-dash-page .rpt-table-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #4169E1, var(--appt-navy));
+    border-radius: 8px;
+}
+
+.adm-dash-page .va-appt-table {
+    width: 100%;
+    min-width: 1100px;
+    margin: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: #fff !important;
+}
+
+.adm-dash-page .va-appt-table thead.rpt-table-head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.adm-dash-page .va-appt-table thead.rpt-table-head th {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, var(--appt-navy-soft) 100%) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 0.68rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 0.75rem 0.85rem !important;
+    border: none !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.adm-dash-page .va-appt-table thead.rpt-table-head th:last-child {
+    border-right: none !important;
+}
+
+/* Hide reason column on tabs that do not use it */
+.adm-dash-page .va-appt-table:not(.rpt-has-reason) .rpt-col-reason {
+    display: none !important;
+}
+
+/* Reason column — only on All / Rejected tabs (column 16) */
+.adm-dash-page .va-appt-table.rpt-has-reason th.rpt-col-reason,
+.adm-dash-page .va-appt-table.rpt-has-reason tbody td.rpt-col-reason-cell {
+    min-width: 130px !important;
+    max-width: 150px !important;
+    width: 130px;
+    text-align: center !important;
+    overflow: visible !important;
+    text-overflow: clip;
+    white-space: nowrap;
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+}
+
+.adm-dash-page .va-appt-table.rpt-has-reason thead.rpt-table-head th.rpt-col-reason {
+    z-index: 4;
+}
+
+.adm-dash-page .va-appt-table tbody tr.rpt-table-summary-row td.rpt-summary-label {
+    text-align: right !important;
+}
+
+.adm-dash-page .va-appt-table tbody tr.rpt-table-summary-row td:last-child {
+    border-right: none !important;
+}
+
+/* Reset legacy global .table sticky/width rules inside appointments table */
+.adm-dash-page .va-appt-table.table th,
+.adm-dash-page .va-appt-table.table td {
+    position: static;
+}
+
+.adm-dash-page .va-appt-table thead.rpt-table-head th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.adm-dash-page .va-appt-table tbody td {
+    padding: 0.7rem 0.85rem !important;
+    font-size: 0.84rem !important;
+    color: #334155 !important;
+    border-top: none !important;
+    border-bottom: 1px solid #eef2f7 !important;
+    border-right: none !important;
+    vertical-align: middle !important;
+    background: #fff !important;
+    white-space: nowrap;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.adm-dash-page .va-appt-table tbody td:nth-child(2) {
+    font-weight: 600;
+    color: var(--appt-navy) !important;
+    max-width: 200px;
+}
+
+.adm-dash-page .va-appt-table tbody td:nth-child(1) {
+    font-family: var(--appt-mono);
+    font-size: 0.8rem;
+    color: var(--appt-muted) !important;
+}
+
+.adm-dash-page .va-appt-table tbody tr:nth-child(even) td {
+    background: #fafbfd !important;
+}
+
+.adm-dash-page .va-appt-table tbody tr:hover td {
+    background: #f0f4ff !important;
+}
+
+.adm-dash-page .va-appt-table tbody tr.rpt-table-summary-row td {
+    background: linear-gradient(180deg, #f1f5f9 0%, #e8eef5 100%) !important;
+    font-weight: 700 !important;
+    color: var(--appt-navy) !important;
+    border-top: 2px solid var(--appt-border) !important;
+    font-family: var(--appt-mono);
+}
+
+.adm-dash-page .va-appt-table tbody tr.rpt-empty-row td {
+    text-align: center !important;
+    padding: 2rem !important;
+    color: var(--appt-muted) !important;
+    font-style: italic;
+}
+
+.adm-dash-page .rpt-cell-muted {
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+/* Status badges */
+.adm-dash-page .rpt-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.adm-dash-page .rpt-status-badge--approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.adm-dash-page .rpt-status-badge--completed {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.adm-dash-page .rpt-status-badge--pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.adm-dash-page .rpt-status-badge--rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.adm-dash-page .rpt-status-badge--feedback-pending {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+/* View action buttons */
+.adm-dash-page .rpt-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(6, 14, 87, 0.15);
+    border-radius: 8px;
+    background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+    color: var(--appt-navy);
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.adm-dash-page .rpt-action-btn:hover {
+    background: var(--appt-navy);
+    color: #fff;
+    border-color: var(--appt-navy);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(6, 14, 87, 0.2);
+}
+
+.adm-dash-page .tab-content {
+    padding: 0 0 0.25rem;
+}
+
+@media (max-width: 992px) {
+    .adm-dash-page .rpt-toolbar.va-toolbar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .adm-dash-page .rpt-toolbar-actions {
+        grid-column: 1 / -1;
+        justify-content: stretch;
+    }
+
+    .adm-dash-page .rpt-toolbar-actions .rpt-btn-export {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .adm-dash-page .rpt-toolbar.va-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .adm-dash-page .rpt-table-shell {
+        margin: 0 0.75rem 0.85rem;
+    }
+
+    .adm-dash-page .rpt-appt-tabs .tab-text {
+        font-size: 0.72rem;
+    }
+
+    .adm-dash-page .rpt-btn-export span {
+        display: none;
+    }
+
+    .adm-dash-page .rpt-btn-export {
+        flex: 1;
+        justify-content: center;
+        min-width: 44px;
+    }
+}
+
+/* Mobile: stack rows as cards */
+@media (max-width: 768px) {
+    .adm-dash-page .rpt-table-shell {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        margin: 0 0.75rem 1rem;
+    }
+
+    .adm-dash-page .rpt-table-scroll {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .adm-dash-page .va-appt-table {
+        min-width: 0 !important;
+    }
+
+    .adm-dash-page .va-appt-table thead.rpt-table-head {
+        display: none;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row {
+        display: block;
+        margin-bottom: 0.85rem;
+        border: 1px solid var(--appt-border);
+        border-radius: var(--appt-radius-sm);
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(6, 14, 87, 0.06);
+        overflow: hidden;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row:hover td {
+        background: #fff !important;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row td {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.55rem 0.85rem !important;
+        white-space: normal !important;
+        max-width: none !important;
+        border-bottom: 1px solid #eef2f7 !important;
+        text-align: right;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row td::before {
+        content: attr(data-label);
+        flex: 0 0 42%;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--appt-muted);
+        text-align: left;
+        padding-top: 0.1rem;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row td:nth-child(1),
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row td:nth-child(2) {
+        color: #334155 !important;
+        font-weight: 500;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row td:first-child {
+        background: linear-gradient(180deg, #f8fafc 0%, #fff 100%) !important;
+        font-family: var(--appt-mono);
+        font-weight: 600 !important;
+        color: var(--appt-navy) !important;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-data-row td:last-child {
+        border-bottom: none !important;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-empty-row {
+        display: block;
+        border: 1px dashed #cbd5e1;
+        border-radius: var(--appt-radius-sm);
+        background: #f8fafc;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-empty-row td {
+        display: block;
+        text-align: center !important;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-empty-row td::before {
+        display: none;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-table-summary-row {
+        display: block;
+        margin-top: 0.5rem;
+        border-radius: var(--appt-radius-sm);
+        border: 2px solid var(--appt-border);
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-table-summary-row td {
+        display: block;
+        text-align: center !important;
+        padding: 0.75rem !important;
+    }
+
+    .adm-dash-page .va-appt-table tbody tr.rpt-table-summary-row td::before {
+        display: none;
+    }
+}
+
+/* Kill legacy global .table header when inside appointments panel */
+.adm-dash-page .va-appointments-panel .va-appt-table thead th,
+.adm-dash-page .va-appointments-panel .rpt-table thead th {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, var(--appt-navy-soft) 100%) !important;
+    color: #fff !important;
+}
+
+/* Admin dashboard — chart cards (counselor design) */
+.adm-dash-page .charts-section .chart-container {
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+    border-radius: var(--appt-radius);
+    box-shadow: 0 4px 28px var(--appt-glow);
+    padding: 1.25rem 1.35rem !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.adm-dash-page .charts-section .chart-container.rpt-chart-card::before,
+.adm-dash-page .charts-section .chart-container.rpt-chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--appt-navy), #3b82f6, #8b5cf6);
+    z-index: 1;
+}
+
+.rpt-chart-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+}
+
+.rpt-chart-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--appt-navy) 0%, var(--appt-navy-soft) 100%);
+    color: #fff;
+    font-size: 1rem;
+    box-shadow: 0 4px 14px rgba(6, 14, 87, 0.2);
+}
+
+.rpt-chart-icon--pie {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+.rpt-chart-titles {
+    flex: 1;
+    min-width: 0;
+}
+
+.rpt-chart-titles h4 {
+    color: var(--appt-navy);
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin: 0 0 0.2rem;
+    letter-spacing: -0.01em;
+}
+
+.rpt-chart-subtitle {
+    margin: 0;
+    font-family: var(--appt-mono);
+    font-size: 0.72rem;
+    color: var(--appt-muted);
+    letter-spacing: 0.02em;
+}
+
+.adm-dash-page .charts-section h4,
+.adm-dash-page .charts-section h4 {
+    color: var(--appt-navy);
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.adm-dash-page .charts-section .chart-wrapper,
+.adm-dash-page .charts-section .chart-wrapper {
+    position: relative;
+    z-index: 2;
+}
+
+.adm-dash-page .charts-section .pie-chart .chart-wrapper.chart-wrapper--status,
+.va-page .charts-section .pie-chart .chart-wrapper.chart-wrapper--status,
+.hr-page .charts-section .pie-chart .chart-wrapper.chart-wrapper--status {
+    height: 250px !important;
+    min-height: 240px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.adm-dash-page .charts-section .trend-chart .chart-wrapper,
+.adm-dash-page .charts-section .trend-chart .chart-wrapper {
+    height: 400px !important;
+}
+
+.rpt-chart-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.8rem;
+    color: var(--appt-muted);
+    line-height: 1.4;
+}
+
+.rpt-chart-empty {
+    margin: 0 0 0.75rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    color: var(--appt-muted);
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: var(--appt-radius-sm);
+}
+
+.chart-wrapper--status {
+    height: 250px !important;
+    min-height: 240px;
+}
+
+.rpt-status-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--appt-border);
+}
+
+.rpt-status-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rpt-status-item {
+    display: grid;
+    grid-template-columns: 12px 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.rpt-status-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.rpt-status-name {
+    color: var(--appt-navy);
+    font-weight: 600;
+}
+
+.rpt-status-count {
+    font-family: var(--appt-mono);
+    font-weight: 700;
+    color: var(--appt-navy);
+    text-align: right;
+}
+
+.rpt-status-pct {
+    font-family: var(--appt-mono);
+    font-size: 0.78rem;
+    color: var(--appt-muted);
+    min-width: 3rem;
+    text-align: right;
+}
+
+.rpt-status-total {
+    margin: 0.75rem 0 0;
+    padding-top: 0.65rem;
+    border-top: 1px dashed var(--appt-border);
+    font-size: 0.85rem;
+    color: var(--appt-muted);
+    text-align: center;
+}
+
+.rpt-status-total strong {
+    font-family: var(--appt-mono);
+    color: var(--appt-navy);
+    font-size: 1.1rem;
+}
+
+
+.adm-dash-page .charts-section .chart-container.pie-chart.rpt-chart-card,
+.va-page .charts-section .chart-container.pie-chart.rpt-chart-card,
+.hr-page .charts-section .chart-container.pie-chart.rpt-chart-card {
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.adm-dash-page .charts-section > .row,
+.va-page .charts-section > .row,
+.hr-page .charts-section > .row {
+    align-items: flex-start;
+}
+
+.adm-dash-page .rpt-status-breakdown,
+.va-page .rpt-status-breakdown,
+.hr-page .rpt-status-breakdown {
+    overflow: visible;
+    max-height: none;
+    flex-shrink: 0;
+}
+.adm-dash-page .rpt-status-item.rpt-status-item--zero .rpt-status-count,
+.adm-dash-page .rpt-status-item.rpt-status-item--zero .rpt-status-pct {
+    opacity: 0.65;
 }

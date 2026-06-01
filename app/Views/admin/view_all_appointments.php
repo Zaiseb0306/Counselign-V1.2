@@ -12,11 +12,10 @@
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= base_url('css/admin/view_all_appointments.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/admin/header.css') ?>">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <?= view('admin/partials/vibe_styles') ?>
 </head>
 
-<body>
+<body class="adm-vaa-page-body">
     <header class="admin-header">
         <div class="header-container">
             <div class="logo-title-container">
@@ -300,6 +299,13 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending"
+                    type="button">
+                    <i class="fas fa-clock"></i>
+                    <span class="tab-text">Pending</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="followup-tab" data-bs-toggle="tab" data-bs-target="#followup"
                     type="button">
                     <i class="fas fa-calendar-plus"></i>
@@ -399,6 +405,37 @@
                             </tr>
                         </thead>
                         <tbody id="allAppointmentsTable">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pending Appointments Tab -->
+            <div class="tab-pane fade" id="pending" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
+                        <table class="table table-hover mb-0" style="min-width: 1100px;">
+                            <thead class="table-light sticky-top">
+                            <tr>
+                                <th>User ID</th>
+                                <th>Full Name</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Method Type</th>
+                                <th>Consultation Type</th>
+                                <th>Session Type</th>
+                                <th>Purpose</th>
+                                <th>Student Concern</th>
+                                <th>Counselor Remarks</th>
+                                <th>Counselor</th>
+                                <th>Student Feedbacks</th>
+                                <th>Mean</th>
+                                <th>Interpretation</th>
+                                <th>Status</th>
+                                <th style="width: 60%;">Reason for Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingAppointmentsTable">
                             <!-- Data will be populated by JavaScript -->
                         </tbody>
                     </table>
@@ -544,11 +581,14 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="<?= base_url('js/shared/appointment_pdf_dashboard.js') ?>?v=4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
     </script>
-    <script src="<?= base_url('js/admin/view_all_appointments.js') ?>"></script>
+    <script src="<?= base_url('js/counselor/report_charts_theme.js') ?>?v=3"></script>
+    <script src="<?= base_url('js/shared/report_status_utils.js') ?>?v=1"></script>
+    <script src="<?= base_url('js/admin/view_all_appointments.js') ?>?v=8"></script>
     <script src="<?= base_url('js/admin/logout.js') ?>" defer></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script>

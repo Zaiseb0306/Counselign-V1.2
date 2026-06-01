@@ -6,6 +6,34 @@ let searchTimeout = null;
 let lastMessageTimestamp = null; // Changed: Now resets per conversation
 let autoSelectUserId = null;
 
+function setMsgStat(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function updateMsgStats(conversations) {
+    const list = conversations || [];
+    const unread = list.reduce((sum, c) => sum + (parseInt(c.unread_count, 10) || 0), 0);
+    let online = 0;
+    let active = 0;
+    list.forEach((c) => {
+        const info = calculateOnlineStatus(c.last_activity, c.last_login, c.logout_time);
+        if (info.status === 'online') online += 1;
+        if (info.status === 'online' || info.status === 'active') active += 1;
+    });
+    setMsgStat('statConversationsCount', list.length);
+    setMsgStat('statUnreadCount', unread);
+    setMsgStat('statOnlineCount', online);
+    setMsgStat('statActiveCount', active);
+}
+
+const MSG_LOADING_HTML = `<div class="loading-state appt-state appt-loading" id="conversationsLoading">
+                            <div class="appt-loader" role="status" aria-label="Loading counselors">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <p>Loading counselors...</p>
+                        </div>`;
+
 function resolveImageUrl(path) {
     try {
         if (!path) return (window.BASE_URL || '/') + 'Photos/profile.png';
@@ -22,25 +50,50 @@ function initializeMobileSidebar() {
     const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
     const conversationsSidebar = document.getElementById('conversationsSidebar');
     const mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
+    const mainSidebar = document.getElementById('uniSidebar');
+
     if (!mobileSidebarToggle || !conversationsSidebar || !mobileSidebarOverlay) return;
-    function closeSidebar() {
+
+    function closeConversationsSidebar() {
         conversationsSidebar.classList.remove('active');
         mobileSidebarOverlay.classList.remove('active');
         mobileSidebarToggle.classList.remove('hidden');
+        document.body.classList.remove('conversations-sidebar-open');
         document.body.style.overflow = '';
     }
-    function openSidebar() {
+
+    function openConversationsSidebar() {
+        if (mainSidebar && mainSidebar.classList.contains('active')) return;
         conversationsSidebar.classList.add('active');
         mobileSidebarOverlay.classList.add('active');
         mobileSidebarToggle.classList.add('hidden');
+        document.body.classList.add('conversations-sidebar-open');
         document.body.style.overflow = 'hidden';
     }
+
     mobileSidebarToggle.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (conversationsSidebar.classList.contains('active')) closeSidebar(); else openSidebar();
+        if (mainSidebar && mainSidebar.classList.contains('active')) return;
+        if (conversationsSidebar.classList.contains('active')) {
+            closeConversationsSidebar();
+        } else {
+            openConversationsSidebar();
+        }
     });
-    mobileSidebarOverlay.addEventListener('click', function(e) { e.stopPropagation(); closeSidebar(); });
-    if (window.innerWidth <= 768) closeSidebar();
+
+    mobileSidebarOverlay.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeConversationsSidebar();
+    });
+
+    conversationsSidebar.addEventListener('click', function(e) {
+        const conversationItem = e.target.closest('.conversation-item');
+        if (conversationItem && window.innerWidth <= 768) {
+            setTimeout(closeConversationsSidebar, 100);
+        }
+    });
+
+    if (window.innerWidth <= 768) closeConversationsSidebar();
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -138,15 +191,22 @@ async function startMessagePolling() {
 async function loadConversations() {
     const userList = document.querySelector('.conversations-list');
     if (!userList) return;
-    if (!userList.querySelector('.conversation-item')) userList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Loading counselors...</span></div>';
-    
-    const res = await fetch((window.BASE_URL || '/') + 'student/message/operations?action=get_counselor_conversations', { credentials: 'include' });
-    const data = await res.json();
-    
-    if (data.success && Array.isArray(data.counselors)) {
-        updateConversations(data.counselors, false);
-    } else {
-        userList.innerHTML = '<div class="no-conversations"><i class="fas fa-user-md"></i><p>No counselors available</p></div>';
+    if (!userList.querySelector('.conversation-item')) userList.innerHTML = MSG_LOADING_HTML;
+
+    try {
+        const res = await fetch((window.BASE_URL || '/') + 'student/message/operations?action=get_counselor_conversations', { credentials: 'include' });
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.counselors)) {
+            updateConversations(data.counselors, false);
+            updateMsgStats(data.counselors);
+        } else {
+            updateMsgStats([]);
+            userList.innerHTML = '<div class="no-conversations"><i class="fas fa-user-md"></i><p>No counselors available</p></div>';
+        }
+    } catch (_) {
+        updateMsgStats([]);
+        userList.innerHTML = '<div class="no-conversations"><i class="fas fa-exclamation-circle"></i><p>Could not load counselors</p></div>';
     }
 }
 
@@ -211,6 +271,8 @@ function updateConversations(items, isCounselorList = false) {
             </div>`;
         list.appendChild(card);
     });
+
+    updateMsgStats(items);
 }
 
 function selectConversation(userId) {
@@ -293,8 +355,8 @@ function displayMessages(messages, silent = false) {
 
     if (!Array.isArray(messages) || messages.length === 0) {
         container.innerHTML = `
-            <div class="empty-chat" id="empty-state">
-                <div class="empty-icon">
+            <div class="empty-chat appt-empty" id="empty-state">
+                <div class="empty-icon appt-empty-icon">
                     <i class="fas fa-inbox"></i>
                 </div>
                 <h5>No Messages Yet</h5>

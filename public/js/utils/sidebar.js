@@ -275,18 +275,22 @@
             return;
         }
 
-        const baseUrl = window.BASE_URL || '/';
-        const url = baseUrl + endpoint;
-
-        SecureLogger.info('[Sidebar] Syncing profile data from:', url);
-        
-        fetch(url, {
+        let url;
+        let fetchOptions = {
             method: 'GET',
             credentials: 'include',
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
-        })
+        };
+
+        const baseUrl = window.BASE_URL || '/';
+        url = baseUrl + endpoint;
+
+        SecureLogger.info('[Sidebar] Syncing profile data from:', url);
+
+        fetch(url, fetchOptions)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -410,6 +414,8 @@
      * Priority: full_name > name > username > user_id_display > user_id
      */
     function getCounselorDisplayName(userData) {
+        const counselor = userData.counselor || null;
+
         // Check full_name first
         if (userData.full_name && userData.full_name.trim()) {
             return userData.full_name.trim();
@@ -418,6 +424,10 @@
         // Check name
         if (userData.name && userData.name.trim()) {
             return userData.name.trim();
+        }
+
+        if (counselor && counselor.name && counselor.name.trim() && counselor.name !== 'N/A') {
+            return counselor.name.trim();
         }
         
         // Check username

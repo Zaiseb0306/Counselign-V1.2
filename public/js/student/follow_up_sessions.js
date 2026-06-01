@@ -32,18 +32,43 @@ function scheduleAppointment() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Initialize sticky header
-    initStickyHeader();
-
-    // Load completed appointments
     loadCompletedAppointments();
-
-    // Setup modal event listeners
     setupModalEventListeners();
+    initializeSearch();
 });
+
+function setFuStat(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function updateFollowUpStats(appointments) {
+    const list = appointments || [];
+    setFuStat('statCompletedCount', list.length);
+    setFuStat(
+        'statWithFollowUpCount',
+        list.filter((a) => (parseInt(a.follow_up_count, 10) || 0) > 0).length
+    );
+    setFuStat(
+        'statPendingCount',
+        list.filter((a) => (parseInt(a.pending_follow_up_count, 10) || 0) > 0).length
+    );
+    setFuStat(
+        'statTotalFollowUpCount',
+        list.reduce((sum, a) => sum + (parseInt(a.follow_up_count, 10) || 0), 0)
+    );
+}
+
+function showFuLoading(show) {
+    const loader = document.getElementById('fuLoading');
+    const container = document.getElementById('completedAppointmentsContainer');
+    if (loader) loader.style.display = show ? 'block' : 'none';
+    if (show && container) container.style.display = 'none';
+}
 
 // Load completed appointments for the logged-in student
 async function loadCompletedAppointments(searchTerm = '') {
+    showFuLoading(true);
     try {
         let url = (window.BASE_URL || '/') + 'student/follow-up-sessions/completed-appointments';
         if (searchTerm) {
@@ -66,11 +91,14 @@ async function loadCompletedAppointments(searchTerm = '') {
         const data = await response.json();
         
         if (data.status === 'success') {
+            showFuLoading(false);
             displayCompletedAppointments(data.appointments, data.search_term);
         } else {
+            showFuLoading(false);
             showError(data.message || 'Failed to load completed appointments');
         }
     } catch (error) {
+        showFuLoading(false);
         console.error('Error loading completed appointments:', error);
         showError('Error loading completed appointments: ' + error.message);
     }
@@ -79,33 +107,13 @@ async function loadCompletedAppointments(searchTerm = '') {
 // Display completed appointments in card format
 function displayCompletedAppointments(appointments, searchTerm = '') {
     const container = document.getElementById('completedAppointmentsContainer');
-    const pendingContainer = document.getElementById('pendingFollowUpContainer');
-    const pendingSection = document.getElementById('pendingFollowUpSection');
     const noDataMessage = document.getElementById('noCompletedAppointments');
     const noSearchResults = document.getElementById('noSearchResults');
 
     if (!container) return;
 
-    // Identify appointments with pending follow-ups (but still show ALL completed appointments below)
-    const pendingAppointments = appointments.filter(appointment => {
-        const pendingCount = parseInt(appointment.pending_follow_up_count) || 0;
-        return pendingCount > 0;
-    });
-    
-    // Debug logging
-    SecureLogger.info('Total appointments:', appointments.length);
-    SecureLogger.info('Pending appointments:', pendingAppointments.length);
-    SecureLogger.info('Appointments data:', appointments);
+    updateFollowUpStats(appointments);
 
-    // Handle pending appointments section
-    if (pendingAppointments.length > 0 && !searchTerm) {
-        pendingSection.style.display = 'block';
-        pendingContainer.innerHTML = pendingAppointments.map(appointment => createAppointmentCard(appointment)).join('');
-    } else {
-        pendingSection.style.display = 'none';
-    }
-
-    // Show all completed appointments regardless of pending status
     if (appointments.length === 0) {
         container.style.display = 'none';
         if (searchTerm) {
@@ -123,24 +131,30 @@ function displayCompletedAppointments(appointments, searchTerm = '') {
     }
 }
 
-// Create appointment card HTML
+// Create appointment card HTML (matches counselor follow-up vibe cards)
 function createAppointmentCard(appointment) {
+    const counselorName = appointment.counselor_name || 'Your Counselor';
+    const pending = parseInt(appointment.pending_follow_up_count, 10) || 0;
     return `
-        <div class="appointment-card">
+        <div class="appointment-card fu-appointment-card status-completed">
             <div class="appointment-header">
-                <div class="appointment-status">${appointment.status}</div>
+                <div class="appointment-status status-completed">${appointment.status}</div>
                 <div class="header-indicators">
                     <div class="follow-up-count">
                         <i class="fas fa-calendar-plus"></i>
                         Follow-ups: ${appointment.follow_up_count || 0}
                     </div>
-                    ${appointment.pending_follow_up_count > 0 ? `
+                    ${pending > 0 ? `
                     <div class="pending-follow-up-indicator">
                         <i class="fas fa-exclamation-triangle"></i>
                         Pending
                     </div>
                     ` : ''}
                 </div>
+            </div>
+            <div class="appointment-student appointment-counselor">
+                <div class="student-name counselor-name">${counselorName}</div>
+                <div class="student-id counselor-label">Counselor</div>
             </div>
             <div class="appointment-details">
                 <div class="appointment-date">
@@ -153,7 +167,7 @@ function createAppointmentCard(appointment) {
                 </div>
                 <div class="appointment-type">
                     <i class="fas fa-comments"></i>
-                    <span>${appointment.consultation_type}</span>
+                    <span>${appointment.method_type || appointment.consultation_type || '—'}</span>
                 </div>
                 ${appointment.purpose ? `
                 <div class="appointment-purpose">
@@ -161,26 +175,8 @@ function createAppointmentCard(appointment) {
                     <span>${appointment.purpose}</span>
                 </div>
                 ` : ''}
-                ${appointment.reason ? `
-                <div class="appointment-reason">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>${appointment.reason}</span>
-                </div>
-                ` : ''}
-                ${appointment.description ? `
-                <div class="appointment-description">
-                    <i class="fas fa-file-text"></i>
-                    <span>${appointment.description}</span>
-                </div>
-                ` : ''}
-                ${appointment.counselor_name ? `
-                <div class=\"appointment-counselor\"> 
-                    <i class=\"fas fa-user-md\"></i>
-                    <span>${appointment.counselor_name}</span>
-                </div>
-                ` : ''}
             </div>
-            <button class="follow-up-btn" onclick="openFollowUpSessionsModal(${appointment.id}, '${appointment.student_id}')">
+            <button type="button" class="follow-up-btn" onclick="openFollowUpSessionsModal(${appointment.id}, '${appointment.student_id}')">
                 <i class="fas fa-calendar-days"></i>
                 Follow-up Sessions
             </button>
@@ -211,6 +207,17 @@ async function openFollowUpSessionsModal(parentAppointmentId, studentId) {
         
         if (data.status === 'success') {
             displayFollowUpSessions(data.follow_up_sessions);
+            try {
+                const label = document.getElementById('followUpSessionsModalLabel');
+                const card = document
+                    .querySelector(`.appointment-card button.follow-up-btn[onclick*="(${parentAppointmentId},"]`)
+                    ?.closest('.appointment-card');
+                const nameEl = card?.querySelector('.counselor-name');
+                const counselorName = nameEl?.textContent?.trim();
+                if (label && counselorName) {
+                    label.innerHTML = `<i class="fas fa-calendar-alt me-2"></i> Follow-up Sessions — ${counselorName}`;
+                }
+            } catch (_) { /* ignore */ }
             const modal = new bootstrap.Modal(document.getElementById('followUpSessionsModal'));
             modal.show();
         } else {
@@ -297,74 +304,33 @@ function formatDate(dateString) {
     }
 }
 
-// Show error message
+// Show error message (vibe modals — matches counselor follow-up)
 function showError(message) {
-    const errorAlert = document.getElementById('errorAlert');
-    const errorMessage = document.getElementById('errorMessage');
-    
-    if (errorAlert && errorMessage) {
-        errorMessage.textContent = message;
-        errorAlert.classList.add('show');
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            errorAlert.classList.remove('show');
-        }, 5000);
+    const errorModal = document.getElementById('errorModal');
+    const errorBody = document.getElementById('errorModalBody');
+
+    if (errorModal && errorBody) {
+        errorBody.textContent = message;
+        const modal = new bootstrap.Modal(errorModal);
+        modal.show();
     } else {
         console.error('Error:', message);
-        alert(message);
+        alert('Error: ' + message);
     }
 }
 
 // Show success message
 function showSuccess(message) {
-    const successAlert = document.getElementById('successAlert');
-    const successMessage = document.getElementById('successMessage');
-    
-    if (successAlert && successMessage) {
-        successMessage.textContent = message;
-        successAlert.classList.add('show');
-        
-        // Auto-hide after 3 seconds
-        setTimeout(() => {
-            successAlert.classList.remove('show');
-        }, 3000);
+    const successModal = document.getElementById('successModal');
+    const successBody = document.getElementById('successModalBody');
+
+    if (successModal && successBody) {
+        successBody.textContent = message;
+        const modal = new bootstrap.Modal(successModal);
+        modal.show();
     } else {
         SecureLogger.info('Success:', message);
     }
-}
-
-// Initialize sticky header functionality
-function initStickyHeader() {
-    const header = document.querySelector('header');
-    if (!header) return;
-
-    let lastScrollTop = 0;
-    let ticking = false;
-
-    function updateHeader() {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        
-        if (scrollTop > lastScrollTop && scrollTop > 100) {
-            // Scrolling down
-            header.classList.add('sticky-header');
-        } else {
-            // Scrolling up
-            header.classList.remove('sticky-header');
-        }
-        
-        lastScrollTop = scrollTop;
-        ticking = false;
-    }
-
-    function requestTick() {
-        if (!ticking) {
-            requestAnimationFrame(updateHeader);
-            ticking = true;
-        }
-    }
-
-    window.addEventListener('scroll', requestTick);
 }
 
 // Setup modal event listeners
@@ -437,11 +403,6 @@ function initializeSearch() {
         }
     }
 }
-
-// Initialize search when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    initializeSearch();
-});
 
 // Student navbar drawer functionality
 document.addEventListener('DOMContentLoaded', function() {

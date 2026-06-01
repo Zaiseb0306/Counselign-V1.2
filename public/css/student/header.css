@@ -1,6 +1,7 @@
 /* Scoped admin header styles extracted from admin dashboard */
 
-header {
+/* Legacy admin/student headers only — not sidebar vibe top bar */
+header:not(.top-bar) {
     background-color: #060E57;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 10px 15px; /* Default padding for header */
@@ -110,7 +111,7 @@ h1 {
     margin-right: 5px;
 }
 
-header {
+header:not(.top-bar) {
     background-color: #060E57;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 15px; /* Default padding for header */

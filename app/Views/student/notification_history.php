@@ -6,13 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notification History - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= base_url('css/student/notification_history.css?v=2') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_vibe_shared.css?v=1') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
+
 </head>
 
-<body>
+<body class="nh-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -68,21 +76,22 @@
                     Notification History
                 </h1>
             </div>
-
             <div class="top-bar-right">
+
+                <?= view('student/partials/header_actions') ?>
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
                     <button class="top-bar-btn profile-btn" id="profileDropdownBtn">
                         <img id="profile-img-top" src="<?= base_url('Photos/profile.png') ?>" alt="Profile" class="profile-img-small">
-                        <span class="btn-label" id="uniNameTop">Student</span>
+                        <span class="btn-label" id="uniNameTop"><?= session()->get('username') ?: 'Student' ?></span>
                     </button>
 
                     <div class="profile-dropdown-menu" id="profileDropdownMenu">
                         <div class="profile-dropdown-header">
                             <img id="profile-img-dropdown" src="<?= base_url('Photos/profile.png') ?>" alt="Profile" class="profile-img-large">
                             <div class="profile-info">
-                                <div class="profile-name" id="uniNameDropdown">Student</div>
-                                <div class="profile-subtitle" id="lastLoginDropdown">Loading...</div>
+                                <div class="profile-name" id="uniNameDropdown"><?= session()->get('username') ?: 'Student' ?></div>
+                                <div class="profile-subtitle" id="lastLoginDropdown">Last login: <?= session()->get('last_login') ? date('M j, Y g:i A', strtotime(session()->get('last_login'))) : 'Never' ?></div>
                             </div>
                         </div>
                         <div class="profile-dropdown-divider"></div>
@@ -102,24 +111,23 @@
 
         <main class="bg-light p-4">
             <div class="container-fluid px-4">
-                <div class="appointment-container">
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h2 class="text-center fw-bold" style="color: #0d6efd;">Past Notifications</h2>
-                            <p class="text-center text-muted">View and manage your notification history</p>
-                        </div>
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
+                    <p class="mt-2">Loading notification history...</p>
+                </div>
 
-                    <!-- Loading Indicator -->
-                    <div id="loadingIndicator" class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                <!-- Notifications List -->
+                <div id="notificationsListContainer" class="d-none">
+                    <div class="card p-4 shadow">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h2 class="text-center fw-bold" style="color: #0d6efd;">Past Notifications</h2>
+                                <p class="text-center text-muted">View and manage your notification history</p>
+                            </div>
                         </div>
-                        <p class="mt-2">Loading notification history...</p>
-                    </div>
-
-                    <!-- Notifications List -->
-                    <div id="notificationsListContainer" class="d-none">
                         <div id="notificationsList">
                         </div>
 
@@ -135,132 +143,18 @@
         </main>
     </div>
 
+    <?= view('student/partials/notifications_dropdown') ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
     </script>
     <script src="<?= base_url('js/student/notification_history.js') ?>"></script>
+    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_header_drawer.js') ?>"></script>
     <script src="<?= base_url('js/student/logout.js') ?>"></script>
-    <script>
-        // Direct sidebar toggle - ensure it works regardless of sidebar.js issues
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar = document.getElementById('uniSidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            const profileDropdownBtn = document.getElementById('profileDropdownBtn');
-            const profileDropdownMenu = document.getElementById('profileDropdownMenu');
-
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    if (window.innerWidth >= 992) {
-                        sidebar.classList.toggle('collapsed');
-                    } else {
-                        sidebar.classList.toggle('active');
-                        sidebarOverlay.classList.toggle('active');
-                    }
-                });
-            }
-
-            if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', function() {
-                    sidebar.classList.remove('active');
-                    sidebarOverlay.classList.remove('active');
-                });
-            }
-
-            // Profile dropdown - both hover and click functionality
-            if (profileDropdownBtn && profileDropdownMenu) {
-                // Remove any existing event listeners by cloning
-                const newBtn = profileDropdownBtn.cloneNode(true);
-                profileDropdownBtn.parentNode.replaceChild(newBtn, profileDropdownBtn);
-                
-                // Click handler
-                newBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    profileDropdownMenu.classList.toggle('show');
-                });
-
-                // Hover handlers
-                newBtn.addEventListener('mouseenter', function() {
-                    profileDropdownMenu.classList.add('show');
-                });
-
-                newBtn.addEventListener('mouseleave', function() {
-                    // Delay hiding to allow user to move mouse to dropdown
-                    setTimeout(function() {
-                        if (!profileDropdownMenu.matches(':hover')) {
-                            profileDropdownMenu.classList.remove('show');
-                        }
-                    }, 200);
-                });
-
-                profileDropdownMenu.addEventListener('mouseenter', function() {
-                    // Keep dropdown open when hovering over it
-                });
-
-                profileDropdownMenu.addEventListener('mouseleave', function() {
-                    profileDropdownMenu.classList.remove('show');
-                });
-
-                // Close when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!profileDropdownMenu.contains(e.target) && !newBtn.contains(e.target)) {
-                        profileDropdownMenu.classList.remove('show');
-                    }
-                });
-            }
-
-            // Load profile picture
-            loadProfilePicture();
-        });
-
-        function loadProfilePicture() {
-            fetch(window.BASE_URL + 'student/dashboard/get-profile-data', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.data) {
-                    const profilePicture = data.data.profile_picture;
-                    if (profilePicture) {
-                        const profileImgTop = document.getElementById('profile-img-top');
-                        const profileImgDropdown = document.getElementById('profile-img-dropdown');
-                        
-                        if (profileImgTop) {
-                            profileImgTop.src = profilePicture.startsWith('/') ? window.BASE_URL + profilePicture.substring(1) : profilePicture;
-                        }
-                        if (profileImgDropdown) {
-                            profileImgDropdown.src = profilePicture.startsWith('/') ? window.BASE_URL + profilePicture.substring(1) : profilePicture;
-                        }
-                    }
-
-                    // Update user name
-                    const firstName = data.data.first_name || '';
-                    const lastName = data.data.last_name || '';
-                    const fullName = (firstName + ' ' + lastName).trim();
-                    
-                    if (fullName) {
-                        const uniNameTop = document.getElementById('uniNameTop');
-                        const uniNameDropdown = document.getElementById('uniNameDropdown');
-                        
-                        if (uniNameTop) uniNameTop.textContent = fullName;
-                        if (uniNameDropdown) uniNameDropdown.textContent = fullName;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error loading profile picture:', error);
-            });
-        }
-    </script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js?v=3') ?>"></script>
+    <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
 </body>
 
 </html>

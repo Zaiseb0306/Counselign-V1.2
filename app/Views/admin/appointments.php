@@ -7,14 +7,13 @@
     <title>Appointments Management - Counselign</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" type="image/x-icon">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?= base_url('css/admin/appointments.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/shared/appointments_cards_theme.css?v=1') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/admin/appointments.css?v=2') ?>">
     <link rel="stylesheet" href="<?= base_url('css/admin/appointments.mobile.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/admin/header.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <?= view('admin/partials/vibe_styles') ?>
 </head>
 
-<body>
+<body class="adm-appt-page-body appt-page">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -37,6 +36,14 @@
                 <a href="<?= base_url('admin/appointments') ?>" class="sidebar-link active" title="Recent Appointments">
                     <i class="fas fa-calendar-check"></i>
                     <span class="sidebar-text">Recent Appointments</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-questions') ?>" class="sidebar-link" title="Feedback Questions">
+                    <i class="fas fa-question-circle"></i>
+                    <span class="sidebar-text">Feedback Questions</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-analytics/view-feedback') ?>" class="sidebar-link" title="View Feedback">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-text">View Feedback</span>
                 </a>
                 <a href="<?= base_url('admin/follow-up-sessions') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-calendar-days"></i>
@@ -93,6 +100,10 @@
                     <i class="fas fa-calendar-alt"></i>
                     <span class="btn-label">Scheduled Appointments</span>
                 </button>
+                <button class="top-bar-btn" id="manageAppointmentOptionsBtn" title="Manage Appointment Options">
+                    <i class="fas fa-sliders-h"></i>
+                    <span class="btn-label">Manage Options</span>
+                </button>
 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
@@ -124,136 +135,132 @@
             </div>
         </header>
 
-        <main class="main-content">
-            <div class="container py-5">
-                
+        <main class="main-content appt-page">
+            <div class="container-fluid px-4 appt-container">
 
-                <!-- Status Categories Cards -->
-                <div class="row status-cards mb-4">
-                    <div class="col-md-2 col-sm-6 mb-3">
-                        <div class="status-card bg-white rounded shadow-sm">
-                            <div class="status-card-body p-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="status-title">Pending</h6>
-                                        <h3 class="status-count" id="pendingCount">-</h3>
-                                    </div>
-                                    <div class="status-icon bg-warning text-white rounded-circle">
-                                        <i class="fas fa-clock"></i>
-                                    </div>
-                                </div>
+                <section class="stats-summary" aria-label="Appointment statistics">
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-check-double text-primary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="completedCount">-</h3>
+                            <p>Completed</p>
+                        </div>
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-check text-success"></i></div>
+                        <div class="stat-details">
+                            <h3 id="approvedCount">-</h3>
+                            <p>Approved</p>
+                        </div>
+                    </article>
+                    <article class="stat-card rescheduled">
+                        <div class="stat-icon"><i class="fas fa-calendar-alt text-warning"></i></div>
+                        <div class="stat-details">
+                            <h3 id="rescheduledCount">-</h3>
+                            <p>Rescheduled</p>
+                        </div>
+                    </article>
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-clock text-danger"></i></div>
+                        <div class="stat-details">
+                            <h3 id="pendingCount">-</h3>
+                            <p>Pending</p>
+                        </div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-spinner text-secondary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="feedbackPendingCount">-</h3>
+                            <p>InProgress</p>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="appointments-container">
+                    <header class="appointments-header">
+                        <div class="appointments-header-title">
+                            <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>Appointments List</h5>
+                        </div>
+                        <div class="filter-controls">
+                            <div class="filter-group">
+                                <label for="dateRangeFilter"><i class="fas fa-calendar-day"></i> Date</label>
+                                <select class="form-select appt-select" id="dateRangeFilter">
+                                    <option value="all">All Dates</option>
+                                    <option value="today">Today</option>
+                                    <option value="thisWeek">This Week</option>
+                                    <option value="nextWeek">Next Week</option>
+                                    <option value="nextMonth">Next Month</option>
+                                    <option value="past">Past Appointments</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="statusFilter"><i class="fas fa-filter"></i> Status</label>
+                                <select id="statusFilter" class="form-select appt-select">
+                                    <option value="all">All Statuses</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rescheduled">Rescheduled</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="feedback_pending">InProgress</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-2 col-sm-6 mb-3">
-                        <div class="status-card bg-white rounded shadow-sm">
-                            <div class="status-card-body p-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="status-title">Approved</h6>
-                                        <h3 class="status-count" id="approvedCount">-</h3>
-                                    </div>
-                                    <div class="status-icon bg-success text-white rounded-circle">
-                                        <i class="fas fa-check"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2 col-sm-6 mb-3">
-                        <div class="status-card bg-white rounded shadow-sm">
-                            <div class="status-card-body p-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="status-title">Completed</h6>
-                                        <h3 class="status-count" id="completedCount">-</h3>
-                                    </div>
-                                    <div class="status-icon bg-primary text-white rounded-circle">
-                                        <i class="fas fa-check-double"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2 col-sm-6 mb-3">
-                        <div class="status-card bg-white rounded shadow-sm">
-                            <div class="status-card-body p-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="status-title">Rescheduled</h6>
-                                        <h3 class="status-count" id="rescheduledCount">-</h3>
-                                    </div>
-                                    <div class="status-icon bg-warning text-white rounded-circle">
-                                        <i class="fas fa-calendar-alt"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2 col-sm-6 mb-3">
-                        <div class="status-card bg-white rounded shadow-sm">
-                            <div class="status-card-body p-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="status-title">Feedback Pending</h6>
-                                        <h3 class="status-count" id="feedbackPendingCount">-</h3>
-                                    </div>
-                                    <div class="status-icon bg-info text-white rounded-circle">
-                                        <i class="fas fa-star"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    </header>
 
-                <!-- Filter and Appointments Container -->
-                <div class="appointments-container bg-white rounded shadow-sm">
-                    <div class="appointments-header">
-                        <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>Appointments List</h5>
-                        <div class="filter-controls d-flex align-items-center">
-                            <label for="dateRangeFilter" class="me-2">Date:</label>
-                            <select class="form-select" id="dateRangeFilter">
-                                <option value="all">All Dates</option>
-                                <option value="today">Today</option>
-                                <option value="thisWeek">This Week</option>
-                                <option value="nextWeek">Next Week</option>
-                                <option value="nextMonth">Next Month</option>
-                                <option value="past">Past Appointments</option>
-                            </select>
-
-                            <label for="statusFilter" class="me-2">Status:</label>
-                            <select id="statusFilter" class="form-select form-select-sm">
-                                <option value="all">All Statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="completed">Completed</option>
-                                <option value="feedback_pending">Feedback Pending</option>
-                            </select>
+                    <div id="loadingIndicator" class="appt-state appt-loading">
+                        <div class="appt-loader" role="status" aria-label="Loading">
+                            <span></span><span></span><span></span>
                         </div>
+                        <p>Loading appointments...</p>
                     </div>
 
-                    <!-- Loading indicator -->
-                    <div id="loadingIndicator" class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading appointments...</p>
-                    </div>
-
-                    <!-- No appointments message -->
-                    <div id="noAppointmentsMessage" class="text-center py-5 d-none">
-                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <div id="noAppointmentsMessage" class="appt-state appt-empty d-none">
+                        <div class="appt-empty-icon"><i class="fas fa-calendar-times"></i></div>
                         <p>No appointments found.</p>
                     </div>
 
-                    <!-- Appointment List -->
-                    <div id="appointmentsList" class="appointments-list d-none">
-                        <!-- Appointments will be dynamically added here -->
-                    </div>
-                </div>
+                    <div id="appointmentsList" class="appointments-list d-none"></div>
+                </section>
             </div>
         </main>
+    </div>
+
+    <!-- Manage Appointment Options Modal -->
+    <div class="modal fade" id="manageAppointmentOptionsModal" tabindex="-1" aria-labelledby="manageAppointmentOptionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content manage-options-modal-content">
+                <div class="modal-header manage-options-modal-header">
+                    <h5 class="modal-title" id="manageAppointmentOptionsModalLabel">
+                        <i class="fas fa-sliders-h me-2"></i>Manage Appointment Dropdown Options
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body manage-options-modal-body">
+                    <div id="optionsSaveFeedback" class="alert alert-success d-none mb-3" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span>Successfully Applied</span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="methodTypeOptionsInput" class="form-label fw-bold manage-options-label">Method Type Options</label>
+                            <textarea id="methodTypeOptionsInput" class="form-control manage-options-textarea" rows="8" placeholder="One option per line"></textarea>
+                            <small class="text-muted manage-options-hint">Example: In-person</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="purposeOptionsInput" class="form-label fw-bold manage-options-label">Purpose of Consultation Options</label>
+                            <textarea id="purposeOptionsInput" class="form-control manage-options-textarea" rows="8" placeholder="One option per line"></textarea>
+                            <small class="text-muted manage-options-hint">Example: Counseling</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer manage-options-modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveAppointmentOptionsBtn">
+                        <i class="fas fa-save me-1"></i>Save Options
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Appointment Details Modal -->
@@ -461,7 +468,7 @@
         window.BASE_URL = "<?= base_url() ?>";
     </script>
     <script src="<?= base_url('js/admin/admin_drawer.js') ?>"></script>
-    <script src="<?= base_url('js/admin/appointments.js') ?>" defer></script>
+    <script src="<?= base_url('js/admin/appointments.js') ?>?v=2" defer></script>
     <script src="<?= base_url('js/admin/logout.js') ?>" defer></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>

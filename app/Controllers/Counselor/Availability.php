@@ -177,27 +177,31 @@ class Availability extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Server error while validating profile']);
         }
 
-        if (empty($slots)) {
-            return $this->response->setJSON(['success' => true]);
-        }
-
-        // Replace without explicit transaction to avoid false negatives on some MySQL configs
+        // Replace entire weekly schedule (clears removed days and duplicate slots)
         try {
-            // Append new ranges without overriding existing ones
-            $inserted = 0;
-            foreach ($cleanDays as $day) {
-                // Collect ranges for this day from $slots where time not null
-                $ranges = [];
-                foreach ($slots as $s) {
-                    if ($s['day'] === $day && isset($s['range']) && $s['range']) {
-                        $ranges[] = $s['range'];
-                    }
-                }
-                if (!empty($ranges)) {
-                    $inserted += $model->addRangesIfNotExist($userId, $day, $ranges);
+            $rows = [];
+            foreach ($slots as $s) {
+                if (!empty($s['day']) && !empty($s['time'])) {
+                    $rows[] = [
+                        'day' => $s['day'],
+                        'time' => $s['time'],
+                    ];
                 }
             }
-            return $this->response->setJSON(['success' => true, 'inserted' => $inserted]);
+
+            $ok = $model->replaceAllRows($userId, $rows);
+            if (!$ok) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to save availability',
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Availability saved successfully',
+                'slots' => count($rows),
+            ]);
         } catch (\Throwable $e) {
             log_message('error', 'Availability save exception: ' . $e->getMessage());
             return $this->response->setJSON([

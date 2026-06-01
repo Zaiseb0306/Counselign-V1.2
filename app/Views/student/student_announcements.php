@@ -8,14 +8,21 @@
     <meta name="keywords" content="counseling, guidance, university, support, mental health, counselor wellness" />
     <title>Announcements and Events - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="<?= base_url('css/student/student_announcements.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_announcements.css?v=3') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_vibe_shared.css?v=1') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
+
 </head>
 
-<body>
+<body class="sa-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -74,6 +81,8 @@
             </div>
 
             <div class="top-bar-right">
+
+                <?= view('student/partials/header_actions') ?>
 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
@@ -154,10 +163,12 @@
 
     <?php echo view('modals/student_dashboard_modals'); ?>
     <script src="<?= base_url('js/modals/student_dashboard_modals.js') ?>"></script>
+    <?= view('student/partials/notifications_dropdown') ?>
     <script src="<?= base_url('js/student/student_announcements.js') ?>" defer></script>
     <script src="<?= base_url('js/student/student_header_drawer.js') ?>"></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/student/logout.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js?v=3') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
     <script>
         window.BASE_URL = "<?= base_url() ?>";

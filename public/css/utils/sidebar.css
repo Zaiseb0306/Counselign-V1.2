@@ -430,7 +430,7 @@ footer {
 /* Floating Sidebar Toggle Button for Mobile */
 .floating-sidebar-toggle {
     position: fixed;
-    top: 60px; /* Positioned below the top bar to avoid overlapping page title */
+    top: 100px; /* Positioned below the top bar to avoid overlapping page title */
     left: 12px;
     z-index: 998;
     width: 48px;
@@ -454,7 +454,7 @@ footer {
 
 .floating-sidebar-toggle img {
     width: 32px;
-    height: 32px;
+    height: 150px !important;
     object-fit: contain;
 }
 
@@ -524,13 +524,15 @@ footer {
     }
 
     .top-bar-btn {
-        padding: 8px 12px;
-        min-width: 40px;
+        padding: 6px 8px;
+        min-width: 36px;
+        height: 36px;
         justify-content: center;
     }
     
     .top-bar-btn i {
         margin: 0;
+        font-size: 14px;
     }
     
     /* Show floating toggle button when sidebar is hidden */
@@ -608,37 +610,151 @@ footer {
     
     /* Page title header responsive */
     .page-title-header {
-        font-size: 0.9rem;
-        padding: 5px 12px;
+        font-size: 0.75rem;
+        padding: 4px 8px;
     }
     
     .page-title-header .me-2 {
-        margin-right: 0.3rem !important;
+        margin-right: 0.2rem !important;
     }
 
-    .top-bar-right {
+    /* Row 1: Title + Search Icon + Appointment Button + Profile Icon */
+    .top-bar {
+        flex-direction: row;
+        height: auto;
+        padding: 8px 10px;
         gap: 8px;
+        z-index: 997;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+    
+    .top-bar-left {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        order: 1;
+    }
+    
+    .page-title-header {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        line-height: 1.2;
+        display: flex;
+        align-items: center;
+    }
+    
+    .top-bar-right {
+        gap: 6px;
+        flex: 0 0 auto;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        align-items: center;
+        order: 2;
+    }
+    
+    /* Search container - show only icon by default, expands when active */
+    .search-container {
+        width: 36px;
+        min-width: 36px;
+        height: 36px;
+        transition: width 0.2s ease;
+        overflow: hidden;
+    }
+    
+    .search-container.active {
+        width: 180px;
+    }
+    
+    .search-container .input-group {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        transition: width 0.2s ease;
+    }
+    
+    .search-container.active .input-group {
+        width: 180px;
+    }
+    
+    .search-container .form-control {
+        width: 0;
+        min-width: 0;
+        height: 36px;
+        padding: 0;
+        opacity: 0;
+        transition: all 0.2s ease;
+    }
+    
+    .search-container.active .form-control {
+        width: auto;
+        min-width: 0;
+        height: 36px;
+        flex: 1;
+        padding: 6px 8px;
+        opacity: 1;
+    }
+    
+    .search-container .input-group-text {
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+    }
+    
+    /* Hide search button by default */
+    .search-container .btn-outline-secondary {
+        display: none;
+    }
+    
+    .search-container.active .btn-outline-secondary {
+        display: block;
+    }
+    
+    /* Ensure top bar buttons are visible on mobile */
+    .top-bar-btn {
+        padding: 6px 10px;
+        min-width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+    }
+    
+    .top-bar-btn i {
+        font-size: 14px;
+    }
+    
+    /* Profile button sizing - prevent overlap */
+    .profile-btn {
+        width: 36px !important;
+        height: 36px !important;
+        position: relative;
+        flex-shrink: 0;
+    }
+    
+    .profile-btn .profile-img-small {
+        width: 36px !important;
+        height: 36px !important;
+        position: relative;
     }
 
     .profile-dropdown-menu {
         min-width: 240px;
         z-index: 2001;
-    }
-    
-    .top-bar {
-        padding: 8px 10px;
-        height: 50px;
-        z-index: 997;
-    }
-    
-    .profile-btn {
-        width: 40px !important;
-        height: 40px !important;
-    }
-    
-    .profile-btn .profile-img-small {
-        width: 40px;
-        height: 40px;
     }
     
     .sidebar {

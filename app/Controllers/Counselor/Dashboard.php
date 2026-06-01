@@ -34,6 +34,19 @@ class Dashboard extends BaseController
             return redirect()->to('/');
         }
 
+        // Verify user's actual role from database to prevent session role conflicts
+        $userModel = new \App\Models\UserModel();
+        $user = $userModel->where('id', $userId)->first();
+
+        if ($user) {
+            // Update session role if it doesn't match database
+            if ($role !== $user['role']) {
+                log_message('debug', 'Counselor Dashboard - Session role mismatch. Session: ' . $role . ', Database: ' . $user['role'] . '. Updating session.');
+                $session->set('role', $user['role']);
+                $role = $user['role'];
+            }
+        }
+
         // Check if user has counselor role, if not redirect to appropriate dashboard
         if ($role !== 'counselor') {
             log_message('debug', 'Counselor Dashboard - User role is ' . $role . ', redirecting to appropriate dashboard');

@@ -6,13 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scheduled Appointments - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= base_url('css/counselor/scheduled_appointments.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/counselor/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
 
-<body>
+    <link rel="stylesheet" href="<?= base_url('css/counselor/counselor_vibe_shared.css?v=5') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
+</head>
+
+<body class="csq-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -36,6 +44,10 @@
                 <a href="<?= base_url('counselor/pending-feedback') ?>" class="sidebar-link" title="Pending Feedback">
                     <i class="fas fa-star"></i>
                     <span class="sidebar-text">Pending Feedback</span>
+                </a>
+                <a href="<?= base_url('counselor/pending-feedback/view-feedback') ?>" class="sidebar-link" title="View Feedback">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-text">View Feedback</span>
                 </a>
                 <a href="<?= base_url('counselor/follow-up') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-clipboard-list"></i>
@@ -95,11 +107,13 @@
                 </div>
 
                 <button class="top-bar-btn" onclick="window.location.href='<?= base_url('counselor/appointments') ?>'" title="Appointments">
-                    <i class="fa fa-list-alt text-2xl" style="cursor: pointer;"></i>
+                    <i class="fas fa-list-alt" aria-hidden="true"></i>
                     <span class="btn-label">Appointments</span>
                 </button>
 
 
+
+                <?= view('counselor/partials/notification_bell') ?>
 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
@@ -130,24 +144,63 @@
                 </div>
             </div>
         </header>
-        <main class="bg-light p-4">
-            <div class="container-fluid px-4">
+        <main class="appt-page csq-page">
+            <div class="container-fluid px-4 csq-container">
+                
+
+                <section class="stats-summary csq-stats" aria-label="Schedule statistics">
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-calendar-check text-primary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statTotalCount">-</h3>
+                            <p>Scheduled</p>
+                        </div>
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-check text-success"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statApprovedCount">-</h3>
+                            <p>Approved</p>
+                        </div>
+                    </article>
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-sun text-danger"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statTodayCount">-</h3>
+                            <p>Today</p>
+                        </div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-check-double text-secondary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statCompletedCount">-</h3>
+                            <p>Completed</p>
+                        </div>
+                    </article>
+                </section>
+
                 <div class="csq-layout">
                     <div class="csq-left">
-                        <div class="csq-card">
-                            <div id="loading-indicator" class="text-center py-5 d-none">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
+                        <section class="csq-card csq-panel">
+                            <header class="csq-panel-header">
+                                <h5 class="mb-0"><i class="fas fa-table me-2"></i>Scheduled Appointments</h5>
+                            </header>
+
+                            <div id="loading-indicator" class="appt-state appt-loading d-none">
+                                <div class="appt-loader" role="status" aria-label="Loading">
+                                    <span></span><span></span><span></span>
                                 </div>
-                                <p class="mt-2">Loading appointments...</p>
+                                <p>Loading appointments...</p>
                             </div>
 
-                            <div id="empty-message" class="alert alert-info text-center d-none">
-                                <i class="fas fa-info-circle me-2"></i> No scheduled appointments found.
+                            <div id="empty-message" class="appt-state appt-empty d-none">
+                                <div class="appt-empty-icon"><i class="fas fa-calendar-times"></i></div>
+                                <h4>No scheduled appointments found</h4>
+                                <p>Approved sessions will appear here once available.</p>
                             </div>
 
-                            <div class="table-bordered csq-table-wrap overflow-auto" id="appointments-table-container" style="overflow-x: auto;">
-                                <table class="table csq-table" id="appointments-table">
+                            <div class="csq-table-wrap" id="appointments-table-container">
+                                <table class="table csq-table mb-0" id="appointments-table">
                                     <thead>
                                         <tr>
                                             <th scope="col">Student ID</th>
@@ -165,25 +218,25 @@
                                     <tbody id="appointments-body"></tbody>
                                 </table>
                             </div>
-                        </div>
+                        </section>
                     </div>
 
                     <aside class="csq-right">
                         <div class="csq-card csq-sidebar-container">
-                            <div class="sidebar-card">
-                                <h6 class="mb-3">Your Weekly Consultation Schedules</h6>
-                                <div class="schedule-list">
+                            <div class="sidebar-card csq-side-card">
+                                <h6 class="csq-side-title"><i class="fas fa-clock me-2"></i>Your Weekly Consultation Schedules</h6>
+                                <div class="schedule-list" id="counselorScheduleList">
                                     <div class="schedule-row"><span>Monday</span><span>8:00am–11:00am</span></div>
                                     <div class="schedule-row"><span>Tuesday</span><span>2:00pm–4:00pm</span></div>
                                     <div class="schedule-row"><span>Thursday</span><span>8:00am–4:00pm</span></div>
                                 </div>
                             </div>
 
-                            <div class="sidebar-card mini-calendar-card">
+                            <div class="sidebar-card mini-calendar-card csq-side-card">
                                 <div class="mini-cal-header">
-                                    <button class="mini-cal-btn" id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                                    <button type="button" class="mini-cal-btn" id="prevMonth" aria-label="Previous month"><i class="fas fa-chevron-left"></i></button>
                                     <div class="mini-cal-title" id="monthYear"></div>
-                                    <button class="mini-cal-btn" id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+                                    <button type="button" class="mini-cal-btn" id="nextMonth" aria-label="Next month"><i class="fas fa-chevron-right"></i></button>
                                 </div>
                                 <div class="mini-cal-week">
                                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
@@ -202,16 +255,16 @@
     </div>
 
     <!-- Counselor Remarks Modal -->
-    <div class="modal fade" id="remarksModal" tabindex="-1" aria-labelledby="remarksModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="remarksModal" tabindex="-1" aria-labelledby="remarksModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header success-modal-header">
                     <h5 class="modal-title" id="remarksModalLabel">
                         <i class="fas fa-check me-2"></i>Mark Appointment as Completed
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" style="padding: 1rem;">
+                <div class="modal-body appointment-modal-body">
                     <form id="remarksForm" style="display: flex; flex-direction: column;">
                         <div class="mb-3">
                             <label for="counselorRemarks" class="form-label fw-bold">Counselor Remarks:</label>
@@ -221,7 +274,7 @@
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer bg-light">
+                <div class="modal-footer appointment-modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i>Cancel
                     </button>
@@ -233,16 +286,16 @@
         </div>
     </div>
 
-    <div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
+            <div class="modal-content appointment-modal-content reschedule-modal-content">
+                <div class="modal-header appointment-modal-header reschedule-modal-header">
                     <h5 class="modal-title" id="rescheduleModalLabel">
                         <i class="fas fa-calendar-alt me-2"></i>Re-schedule Appointment
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" style="padding: 1rem;">
+                <div class="modal-body appointment-modal-body">
                     <form id="rescheduleForm" style="display: flex; flex-direction: column;">
                         <div class="mb-3">
                             <label for="rescheduleDate" class="form-label fw-bold">New Date:</label>
@@ -261,7 +314,7 @@
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer bg-light">
+                <div class="modal-footer appointment-modal-footer">
                     <button type="button" class="btn btn-warning" id="confirmRescheduleBtn">
                         <i class="fas fa-check me-1"></i>Confirm Re-schedule
                     </button>
@@ -270,12 +323,14 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?= view('counselor/partials/notifications_dropdown') ?>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= base_url('js/counselor/counselor_notifications_dropdown.js?v=3') ?>"></script>
     <script src="<?= base_url('js/utils/timeFormatter.js') ?>"></script>
-    <script src="<?= base_url('js/counselor/scheduled_appointments.js') ?>"></script>
+    <script src="<?= base_url('js/counselor/scheduled_appointments.js?v=2') ?>"></script>
     <script src="<?= base_url('js/counselor/counselor_drawer.js') ?>"></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/counselor/logout.js') ?>"></script>

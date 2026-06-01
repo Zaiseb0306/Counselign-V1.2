@@ -33,19 +33,30 @@ async function loadPendingFeedbackAppointments() {
         loadingIndicator.classList.add('d-none');
         appointmentsTableContainer.classList.remove('d-none');
 
+        const countEl = document.getElementById('pendingFeedbackCount');
+        const tableWrap = document.getElementById('pfTableWrap');
+
         if (data.status === 'success' && data.appointments && data.appointments.length > 0) {
+            const count = data.appointments.length;
+            if (countEl) countEl.textContent = count;
             emptyState.classList.add('d-none');
-            // Store appointments globally
+            if (tableWrap) tableWrap.classList.remove('d-none');
             pendingAppointments = data.appointments;
             renderAppointmentsTable(data.appointments);
         } else {
+            if (countEl) countEl.textContent = '0';
             emptyState.classList.remove('d-none');
+            if (tableWrap) tableWrap.classList.add('d-none');
             pendingAppointments = [];
         }
     } catch (error) {
         console.error('Error loading pending feedback appointments:', error);
         loadingIndicator.classList.add('d-none');
         appointmentsTableContainer.classList.remove('d-none');
+        const countEl = document.getElementById('pendingFeedbackCount');
+        const tableWrap = document.getElementById('pfTableWrap');
+        if (countEl) countEl.textContent = '0';
+        if (tableWrap) tableWrap.classList.add('d-none');
         emptyState.classList.remove('d-none');
         pendingAppointments = [];
     }
@@ -57,22 +68,48 @@ function renderAppointmentsTable(appointments) {
 
     appointments.forEach(appointment => {
         const row = document.createElement('tr');
+        const statusLabel = appointment.status || 'Pending Feedback';
         row.innerHTML = `
-            <td>${appointment.student_name || 'N/A'}</td>
+            <td><strong>${escapeHtml(appointment.student_name || 'N/A')}</strong></td>
             <td>${formatDate(appointment.appointed_date)}</td>
             <td>${formatTime(appointment.appointed_time)}</td>
-            <td>${appointment.purpose || 'N/A'}</td>
-            <td>${appointment.session || 'N/A'}</td>
-            <td><span class="badge bg-warning text-dark">${appointment.status}</span></td>
-            <td>${appointment.remarks ? '<button class="btn btn-sm btn-info" onclick="viewRemarks(' + appointment.id + ')"><i class="fas fa-eye"></i></button>' : 'N/A'}</td>
+            <td>${escapeHtml(appointment.purpose || 'N/A')}</td>
+            <td>${escapeHtml(appointment.session || 'N/A')}</td>
+            <td><span class="badge bg-warning text-dark">${escapeHtml(statusLabel)}</span></td>
+            <td>${appointment.remarks ? '<button type="button" class="btn btn-sm pf-btn-view view-remarks-btn" data-appointment-id="' + appointment.id + '" title="View remarks"><i class="fas fa-eye"></i></button>' : '<span class="text-muted">N/A</span>'}</td>
             <td>
-                <button class="btn btn-sm btn-primary" onclick="viewAppointmentDetails(${appointment.id})">
-                    <i class="fas fa-envelope"></i> Send Appointment Reminder
+                <button type="button" class="btn btn-sm pf-btn-remind send-reminder-btn" data-appointment-id="${appointment.id}">
+                    <i class="fas fa-envelope me-1"></i> Send Reminder
                 </button>
             </td>
         `;
         tableBody.appendChild(row);
     });
+}
+
+// Use event delegation on document level to ensure buttons are always clickable
+document.addEventListener('click', function(e) {
+    const viewRemarksBtn = e.target.closest('.view-remarks-btn');
+    const sendReminderBtn = e.target.closest('.send-reminder-btn');
+
+    if (viewRemarksBtn) {
+        viewRemarks(viewRemarksBtn.dataset.appointmentId);
+    }
+
+    if (sendReminderBtn) {
+        viewAppointmentDetails(sendReminderBtn.dataset.appointmentId);
+    }
+});
+
+// Make functions globally accessible
+window.viewRemarks = viewRemarks;
+window.viewAppointmentDetails = viewAppointmentDetails;
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
 }
 
 function formatDate(dateString) {

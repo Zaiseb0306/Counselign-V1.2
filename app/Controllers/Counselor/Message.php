@@ -24,7 +24,6 @@ class Message extends BaseController
 
     public function operations()
     {
-        
         // Check if user is logged in and is counselor
         if (!session()->get('logged_in') || session()->get('role') !== 'counselor') {
             return $this->failUnauthorized('User not logged in or not authorized');

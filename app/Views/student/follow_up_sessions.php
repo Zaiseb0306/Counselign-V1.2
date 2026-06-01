@@ -10,14 +10,22 @@
     <meta name="csrf-token" content="<?= csrf_hash() ?>">
     <title>Follow-up Sessions - Student - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="<?= base_url('css/student/follow_up_sessions.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/counselor/follow_up.css?v=3') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/follow_up_sessions.css?v=5') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_vibe_shared.css?v=2') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
+
 </head>
 
-<body>
+<body class="fus-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -71,12 +79,14 @@
         <header class="top-bar">
             <div class="top-bar-left">
                 <h1 class="page-title-header">
-                    <i class="fas fa-clipboard-list me-2"></i>
-                    Follow-up Sessions - Student View
+                    <i class="fas fa-calendar-check me-2"></i>
+                    For follow-up Session
                 </h1>
             </div>
 
             <div class="top-bar-right">
+
+                <?= view('student/partials/header_actions') ?>
 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
@@ -109,69 +119,90 @@
         </header>
 
 
-        <main class="bg-light p-4">
-            <div class="container-fluid px-4">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="follow-up-container">
-                            <div class="section-header">
-                                <p class="section-subtitle">View your completed appointments and their follow-up sessions</p>
-                            </div>
+        <main class="appt-page fu-page">
+            <div class="container-fluid px-4 fu-container">
 
-                            <!-- Pending Follow-up Appointments Section -->
-                            <div class="pending-follow-up-section" id="pendingFollowUpSection" style="display: none;">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h3 class="subsection-title mb-0">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        Appointment with a Pending Follow-up
-                                    </h3>
-                                </div>
-                                <div id="pendingFollowUpContainer" class="appointments-grid">
-                                    <!-- Pending follow-up appointments will be loaded here -->
-                                </div>
-                            </div>
+                <section class="stats-summary fu-stats" aria-label="Follow-up statistics">
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-check-double text-primary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statCompletedCount">-</h3>
+                            <p>Completed</p>
+                        </div>
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-calendar-plus text-success"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statWithFollowUpCount">-</h3>
+                            <p>With Follow-ups</p>
+                        </div>
+                    </article>
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-exclamation-triangle text-danger"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statPendingCount">-</h3>
+                            <p>Pending</p>
+                        </div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-layer-group text-secondary"></i></div>
+                        <div class="stat-details">
+                            <h3 id="statTotalFollowUpCount">-</h3>
+                            <p>Total Sessions</p>
+                        </div>
+                    </article>
+                </section>
 
-                            <!-- Completed Appointments Section -->
-                            <div class="completed-appointments-section">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h3 class="subsection-title mb-0">
-                                        <i class="fas fa-check-circle me-2"></i>
-                                        My Completed Appointments
-                                    </h3>
-                                    <div class="search-container">
-                                        <div class="input-group" style="max-width: 300px;">
-                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                            <input type="text" class="form-control" id="searchInput" placeholder="Search appointments...">
-                                            <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn" style="display: none;">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="completedAppointmentsContainer" class="appointments-grid">
-                                    <!-- Completed appointments will be loaded here -->
-                                </div>
-                                <div id="noCompletedAppointments" class="no-data-message" style="display: none;">
-                                    <i class="fas fa-info-circle"></i>
-                                    <p>No completed appointments found. Complete some appointments to view follow-up sessions.</p>
-                                </div>
-                                <div id="noSearchResults" class="no-data-message" style="display: none;">
-                                    <i class="fas fa-search"></i>
-                                    <p>No appointments found matching your search criteria.</p>
-                                </div>
+                <section class="fu-panel completed-appointments-section">
+                    <header class="fu-panel-header section-header-bar">
+                        <div class="section-title-wrapper">
+                            <h3 class="subsection-title mb-0">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Completed Appointments
+                            </h3>
+                        </div>
+                        <div class="search-container">
+                            <div class="input-group search-wrapper fu-search">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search appointments...">
+                                <button class="btn fu-btn-clear" type="button" id="clearSearchBtn" style="display: none;" title="Clear search">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                         </div>
+                    </header>
+
+                    <div id="fuLoading" class="appt-state appt-loading">
+                        <div class="appt-loader" role="status" aria-label="Loading">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <p>Loading completed appointments...</p>
                     </div>
-                </div>
+
+                    <div id="completedAppointmentsContainer" class="appointments-grid"></div>
+
+                    <div id="noCompletedAppointments" class="appt-state appt-empty no-data-message" style="display: none;">
+                        <div class="appt-empty-icon"><i class="fas fa-calendar-check"></i></div>
+                        <h4>No completed appointments</h4>
+                        <p>Complete some appointments to view follow-up sessions.</p>
+                    </div>
+                    <div id="noSearchResults" class="appt-state appt-empty no-data-message" style="display: none;">
+                        <div class="appt-empty-icon"><i class="fas fa-search"></i></div>
+                        <h4>No matches found</h4>
+                        <p>No appointments match your search criteria.</p>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
 
+    <?= view('student/partials/notifications_dropdown') ?>
+
     <!-- Follow-up Sessions Modal (Read-Only) -->
-    <div class="modal fade" id="followUpSessionsModal" tabindex="-1" aria-labelledby="followUpSessionsModalLabel" aria-hidden="true">
+    <div class="modal fade appt-vibe-modal" id="followUpSessionsModal" tabindex="-1" aria-labelledby="followUpSessionsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header">
                     <h5 class="modal-title" id="followUpSessionsModalLabel">
                         <i class="fas fa-calendar-alt me-2"></i>
                         Follow-up Sessions
@@ -179,45 +210,68 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="followUpSessionsContainer">
-                        <!-- Follow-up sessions will be loaded here -->
-                    </div>
+                    <div id="followUpSessionsContainer"></div>
                     <div id="noFollowUpSessions" class="no-data-message" style="display: none;">
                         <i class="fas fa-info-circle"></i>
                         <p>No follow-up sessions found for this appointment.</p>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer appointment-modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Error Alert -->
-    <div class="alert alert-danger alert-dismissible fade" id="errorAlert" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        <span id="errorMessage"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Success Modal -->
+    <div class="modal fade appt-vibe-modal" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header success-modal-header">
+                    <h5 class="modal-title" id="successModalTitle">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Success
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="successModalBody"></div>
+                <div class="modal-footer appointment-modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Success Alert -->
-    <div class="alert alert-success alert-dismissible fade" id="successAlert" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
-        <i class="fas fa-check-circle me-2"></i>
-        <span id="successMessage"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Error Modal -->
+    <div class="modal fade appt-vibe-modal" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content appointment-modal-content">
+                <div class="modal-header appointment-modal-header danger-modal-header">
+                    <h5 class="modal-title" id="errorModalTitle">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="errorModalBody"></div>
+                <div class="modal-footer appointment-modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= base_url('js/student/follow_up_sessions.js') ?>"></script>
-    <script src="<?= base_url('js/student/student_drawer.js') ?>"></script>
-    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script>
-        // Set BASE_URL for JavaScript
+        // Must be defined before student scripts run
         window.BASE_URL = '<?= base_url() ?>';
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= base_url('js/student/follow_up_sessions.js') ?>?v=3" defer></script>
+    <script src="<?= base_url('js/student/student_drawer.js') ?>"></script>
+    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/student/student_header_drawer.js') ?>"></script>
     <script src="<?= base_url('js/student/logout.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js?v=3') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
 </body>
 

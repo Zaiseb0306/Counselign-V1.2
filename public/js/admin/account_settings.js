@@ -20,12 +20,8 @@ function editField(field) {
     let fieldType = field === 'email' ? 'email' : 'text';
     let currentValue = '';
 
-    // Get current value
-    if (field === 'email') {
-        currentValue = document.querySelector('.info-item:nth-of-type(1) .info-value').textContent;
-    } else if (field === 'username') {
-        currentValue = document.querySelector('.info-item:nth-of-type(2) .info-value').textContent;
-    }
+    const valueEl = document.querySelector(`[data-field="${field}"] .acct-field-value`);
+    currentValue = valueEl ? valueEl.textContent.trim() : '';
 
     SecureLogger.info(`Current value for ${field}: ${currentValue}`);
 
@@ -56,14 +52,7 @@ function editField(field) {
     // Append the modal to the body
     document.body.appendChild(modal);
 
-    // Add animation class after a small delay to trigger the transition
-    setTimeout(() => {
-        modal.classList.add('active');
-        // Do not shift profile container on desktop anymore
-        const pc = document.querySelector('.profile-container');
-        pc && pc.classList.remove('modal-open');
-        positionModal();
-    }, 50);
+    setTimeout(() => modal.classList.add('active'), 50);
 
     // Add form submission handler
     const form = modal.querySelector(`#edit-${field}-form`);
@@ -91,12 +80,7 @@ function editField(field) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update displayed value
-                    if (field === 'email') {
-                        document.querySelector('.info-item:nth-of-type(1) .info-value').textContent = newValue;
-                    } else if (field === 'username') {
-                        document.querySelector('.info-item:nth-of-type(2) .info-value').textContent = newValue;
-                    }
+                    updateFieldDisplay(field, newValue);
                     showNotification(data.message, 'success');
                     closeModal();
                 } else {
@@ -152,12 +136,7 @@ function changePassword() {
     document.body.appendChild(modal);
 
     // Add animation class
-    setTimeout(() => {
-        modal.classList.add('active');
-        const pc = document.querySelector('.profile-container');
-        pc && pc.classList.remove('modal-open');
-        positionModal();
-    }, 50);
+    setTimeout(() => modal.classList.add('active'), 50);
 
     // Add form submission handler
     const form = modal.querySelector('#change-password-form');
@@ -236,12 +215,7 @@ function updateProfilePicture() {
     document.body.appendChild(modal);
 
     // Add animation class
-    setTimeout(() => {
-        modal.classList.add('active');
-        const pc = document.querySelector('.profile-container');
-        pc && pc.classList.remove('modal-open');
-        positionModal();
-    }, 50);
+    setTimeout(() => modal.classList.add('active'), 50);
 
     // Add form submission handler
     const form = modal.querySelector('#update-profile-form');
@@ -317,30 +291,34 @@ function updateProfilePicture() {
     };
 }
 
+function updateFieldDisplay(field, value) {
+    const valueEl = document.querySelector(`[data-field="${field}"] .acct-field-value`);
+    if (valueEl) {
+        valueEl.textContent = value;
+    }
+    if (field === 'email') {
+        const preview = document.getElementById('admin-email-preview');
+        if (preview) preview.textContent = value;
+    }
+    if (field === 'username') {
+        const display = document.getElementById('admin-username-display');
+        if (display) display.textContent = value;
+        const topName = document.getElementById('uniNameTop');
+        const dropName = document.getElementById('uniNameDropdown');
+        if (topName) topName.textContent = value;
+        if (dropName) dropName.textContent = value;
+    }
+}
+
 function closeModal() {
     const modal = document.querySelector('.modal-overlay');
     if (modal) {
         modal.classList.remove('active');
-        document.querySelector('.profile-container').classList.remove('modal-open');
         setTimeout(() => {
             modal.remove();
         }, 300);
     }
 }
-
-function positionModal() {
-    const modal = document.querySelector('.modal-overlay');
-    if (!modal) return;
-    // Remove any legacy inline positioning so CSS flex centering can take over
-    modal.style.top = '';
-    modal.style.right = '';
-    modal.style.bottom = '';
-    modal.style.left = '';
-    modal.style.transform = '';
-}
-
-// Add window resize handler
-window.addEventListener('resize', positionModal);
 
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
@@ -374,7 +352,11 @@ function loadAdminData() {
 
     fetch((window.BASE_URL || '/') + 'admin/dashboard/data', {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
         .then(response => {
             if (!response.ok) {
@@ -382,12 +364,9 @@ function loadAdminData() {
                     window.location.href = (window.BASE_URL || '/') + 'auth/logout';
                     return;
                 }
-                throw new Error('Network response was not ok');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-
-            // First get the text response
             return response.text().then(text => {
-                // Try to parse as JSON, if it fails, log the raw response
                 try {
                     return JSON.parse(text);
                 } catch (e) {
@@ -399,11 +378,30 @@ function loadAdminData() {
         })
         .then(data => {
             if (data.success) {
-                // Update profile information
-                document.getElementById('admin-id').textContent = data.data.user_id;
-                document.getElementById('admin-email').textContent = data.data.email;
-                document.getElementById('admin-username').textContent = data.data.username;
-                document.getElementById('profile-avatar').src = data.data.profile_picture;
+                const d = data.data;
+                const idEl = document.getElementById('admin-id');
+                if (idEl) idEl.textContent = d.user_id || '—';
+
+                updateFieldDisplay('email', d.email || '');
+                updateFieldDisplay('username', d.username || '');
+
+                const avatar = document.getElementById('profile-avatar');
+                if (avatar && d.profile_picture) {
+                    avatar.src = d.profile_picture;
+                }
+
+                const topImg = document.getElementById('profile-img-top');
+                const dropImg = document.getElementById('profile-img-dropdown');
+                if (d.profile_picture) {
+                    if (topImg) topImg.src = d.profile_picture;
+                    if (dropImg) dropImg.src = d.profile_picture;
+                }
+
+                const lastLogin = document.getElementById('admin-last-login');
+                const lastLoginDrop = document.getElementById('lastLoginDropdown');
+                const loginText = d.last_login || d.last_login_formatted || '—';
+                if (lastLogin) lastLogin.textContent = loginText;
+                if (lastLoginDrop) lastLoginDrop.textContent = loginText !== '—' ? `Last login: ${loginText}` : 'Welcome back';
             } else {
                 throw new Error(data.message || 'Failed to load admin data');
             }
@@ -471,37 +469,4 @@ document.addEventListener('DOMContentLoaded', function () {
     window.validateEmail = validateEmail;
     window.updateProfilePicture = updateProfilePicture;
 
-    // Add event listeners to buttons
-    const editButtons = document.querySelectorAll('.edit-btn');
-    debug(`Found ${editButtons.length} edit buttons`);
-
-    editButtons.forEach((button, index) => {
-        button.addEventListener('click', function () {
-            debug(`Edit button ${index + 1} clicked`);
-            const parentItem = this.closest('.info-item');
-            const label = parentItem.querySelector('.info-label').textContent.trim();
-            let field = '';
-
-            if (label.includes('Email')) {
-                field = 'email';
-            } else if (label.includes('Username')) {
-                field = 'username';
-            }
-
-            if (field) {
-                editField(field);
-            }
-        });
-    });
-
-    const passwordButton = document.querySelector('.change-password-btn');
-    if (passwordButton) {
-        debug('Password button found');
-        passwordButton.addEventListener('click', function () {
-            debug('Password button clicked');
-            changePassword();
-        });
-    } else {
-        debug('Password button not found');
-    }
 });

@@ -9,13 +9,11 @@
     <title>Counselor's Information - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="<?= base_url('css/admin/counselor_info.css') . '?v=' . @filemtime(FCPATH . 'css/admin/counselor_info.css') ?>" rel="stylesheet" />
-    <link rel="stylesheet" href="<?= base_url('css/admin/header.css') . '?v=' . @filemtime(FCPATH . 'css/admin/header.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <?= view('admin/partials/vibe_styles') ?>
 </head>
 
-<body>
+<body class="adm-cinfo-page-body">
 
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
@@ -39,6 +37,14 @@
                 <a href="<?= base_url('admin/appointments') ?>" class="sidebar-link" title="Recent Appointments">
                     <i class="fas fa-calendar-check"></i>
                     <span class="sidebar-text">Recent Appointments</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-questions') ?>" class="sidebar-link" title="Feedback Questions">
+                    <i class="fas fa-question-circle"></i>
+                    <span class="sidebar-text">Feedback Questions</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-analytics/view-feedback') ?>" class="sidebar-link" title="View Feedback">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-text">View Feedback</span>
                 </a>
                 <a href="<?= base_url('admin/follow-up-sessions') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-calendar-days"></i>

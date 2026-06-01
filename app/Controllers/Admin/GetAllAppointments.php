@@ -85,7 +85,12 @@ class GetAllAppointments extends BaseController
                         appointments.counselor_remarks,
                         COALESCE(c.name, 'No Preference') as counselor_name,
                         appointments.status, appointments.reason,
-                        COALESCE(sf.status, 'pending') as feedback_status,
+                        appointments.student_feedback_status,
+                        CASE
+                            WHEN LOWER(COALESCE(sf.status, '')) = 'submitted' THEN 'submitted'
+                            WHEN LOWER(COALESCE(appointments.student_feedback_status, '')) IN ('feedback submitted', 'feedback_submitted') THEN 'submitted'
+                            ELSE 'pending'
+                        END as feedback_status,
                         sf.q1_ease_of_use,
                         sf.q2_satisfaction,
                         sf.q3_timeliness,
@@ -228,6 +233,8 @@ class GetAllAppointments extends BaseController
                     break;
                 case 'monthly':
                     $currentYear = date('Y');
+                    $startDateStr = $currentYear . '-01-01';
+                    $endDateStr = $currentYear . '-12-31';
                     $dateFilter = " WHERE YEAR(preferred_date) = '$currentYear'";
                     break;
             }
@@ -325,6 +332,15 @@ class GetAllAppointments extends BaseController
                     $stats[$date] = ['completed' => 0, 'approved' => 0, 'rejected' => 0, 'rescheduled' => 0, 'pending' => 0, 'feedback_pending' => 0];
                 }
                 $status = strtolower($appointment['status']);
+                $feedbackStatus = strtolower(str_replace(['-', ' '], '_', $appointment['feedback_status'] ?? 'pending'));
+                $isFeedbackSubmitted = in_array($feedbackStatus, ['submitted', 'feedback_submitted'], true);
+
+                // Business rule:
+                // - completed + submitted feedback => completed
+                // - completed + pending feedback => feedback_pending
+                if ($status === 'completed' && !$isFeedbackSubmitted) {
+                    $status = 'feedback_pending';
+                }
 
                 // Count the status
                 if (in_array($status, ['completed', 'approved', 'rejected', 'rescheduled', 'pending', 'feedback_pending'])) {
@@ -344,7 +360,7 @@ class GetAllAppointments extends BaseController
                 $response['pending'][] = $stat['pending'];
                 $response['feedback_pending'][] = $stat['feedback_pending'];
             }
-            if ($timeRange === 'daily' || $timeRange === 'weekly') {
+            if (!empty($startDateStr) && !empty($endDateStr)) {
                 $response['startDate'] = $startDateStr;
                 $response['endDate'] = $endDateStr;
             }

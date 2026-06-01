@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FeedbackQuestionsService;
 use CodeIgniter\Model;
 
 /**
@@ -18,21 +19,10 @@ class StudentFeedbackAnalyticsModel extends Model
     protected $useSoftDeletes = false;
     protected $useTimestamps = false;
 
-    /**
-     * Question definitions with labels
-     */
-    private $questions = [
-        'q1_ease_of_use' => 'How easy was it to navigate the appointment scheduling system?',
-        'q2_satisfaction' => 'How satisfied are you with the overall counseling experience?',
-        'q3_timeliness' => 'How satisfied are you with the response time to your appointment request?',
-        'q4_information_clarity' => 'How clear was the information provided about counseling services?',
-        'q5_staff_helpfulness' => 'How helpful was the counseling staff in addressing your concerns?',
-        'q6_technology_reliability' => 'How reliable was the technology used for online consultations?',
-        'q7_privacy_confidence' => 'How confident do you feel about the privacy of your personal information?',
-        'q8_recommendation' => 'How likely are you to recommend our counseling services to others?',
-        'q9_overall_experience' => 'How would you rate your overall experience with the counseling system?',
-        'q10_future_use' => 'How likely are you to use our counseling services again in the future?'
-    ];
+    private function getQuestionDefinitions(): array
+    {
+        return (new FeedbackQuestionsService())->getQuestionDefinitionsForAnalytics();
+    }
 
     /**
      * Likert scale labels
@@ -82,12 +72,15 @@ class StudentFeedbackAnalyticsModel extends Model
         }
         
         $feedbackData = $builder->get()->getResultArray();
-        
+        $feedbackService = new FeedbackQuestionsService();
+        $feedbackData = $feedbackService->enrichFeedbacksWithResponses($feedbackData);
+        $questions = $this->getQuestionDefinitions();
+
         $analytics = [];
         $overallSum = 0;
         $overallCount = 0;
         
-        foreach ($this->questions as $field => $label) {
+        foreach ($questions as $field => $label) {
             $questionAnalytics = $this->calculateQuestionStats($feedbackData, $field, $label);
             $analytics[$field] = $questionAnalytics;
             
@@ -182,7 +175,7 @@ class StudentFeedbackAnalyticsModel extends Model
      */
     public function getQuestionLabels(): array
     {
-        return $this->questions;
+        return $this->getQuestionDefinitions();
     }
 
     /**
@@ -229,35 +222,27 @@ class StudentFeedbackAnalyticsModel extends Model
      */
     public function getCategoryMeans(array $analytics): array
     {
-        $categories = [
-            'Service Quality' => ['q2_satisfaction', 'q5_staff_helpfulness', 'q9_overall_experience'],
-            'Technology' => ['q1_ease_of_use', 'q6_technology_reliability'],
-            'Communication' => ['q3_timeliness', 'q4_information_clarity'],
-            'Trust & Privacy' => ['q7_privacy_confidence'],
-            'Loyalty' => ['q8_recommendation', 'q10_future_use']
-        ];
-        
         $categoryMeans = [];
-        
-        foreach ($categories as $category => $questions) {
-            $sum = 0;
-            $count = 0;
-            
-            foreach ($questions as $question) {
-                if (isset($analytics['questions'][$question])) {
-                    $sum += $analytics['questions'][$question]['weighted_mean'];
-                    $count++;
-                }
-            }
-            
-            $mean = $count > 0 ? $sum / $count : 0;
-            $categoryMeans[$category] = [
-                'mean' => round($mean, 2),
-                'interpretation' => $this->getInterpretation($mean),
-                'question_count' => $count
-            ];
+        $questionStats = $analytics['questions'] ?? [];
+
+        if ($questionStats === []) {
+            return $categoryMeans;
         }
-        
+
+        $means = [];
+        foreach ($questionStats as $field => $stats) {
+            $means[$field] = (float) ($stats['weighted_mean'] ?? 0);
+        }
+
+        $values = array_values($means);
+        $overall = count($values) > 0 ? array_sum($values) / count($values) : 0;
+
+        $categoryMeans['All Questions'] = [
+            'mean' => round($overall, 2),
+            'interpretation' => $this->getInterpretation($overall),
+            'question_count' => count($means),
+        ];
+
         return $categoryMeans;
     }
 
@@ -288,5 +273,154 @@ class StudentFeedbackAnalyticsModel extends Model
         }
         
         return $trend;
+    }
+
+    /**
+     * Get sentiment analysis statistics
+     * 
+     * @param array $filters Optional filters (counselor_id, date range)
+     * @return array Sentiment statistics
+     */
+    public function getSentimentStatistics(array $filters = []): array
+    {
+        $db = \Config\Database::connect();
+        
+        $builder = $db->table($this->table)->where('status', 'submitted');
+        
+        if (!empty($filters['counselor_id'])) {
+            $builder->where('counselor_id', $filters['counselor_id']);
+        }
+        
+        if (!empty($filters['start_date'])) {
+            $builder->where('submitted_at >=', $filters['start_date']);
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $builder->where('submitted_at <=', $filters['end_date']);
+        }
+        
+        $feedbackData = $builder->get()->getResultArray();
+        
+        $positive = 0;
+        $negative = 0;
+        $neutral = 0;
+        $totalScore = 0;
+        $scores = [];
+        
+        foreach ($feedbackData as $feedback) {
+            $score = $feedback['sentiment_score'] ?? 0;
+            $label = $feedback['sentiment_label'] ?? 'neutral';
+            
+            $scores[] = $score;
+            $totalScore += $score;
+            
+            switch ($label) {
+                case 'positive':
+                    $positive++;
+                    break;
+                case 'negative':
+                    $negative++;
+                    break;
+                case 'neutral':
+                    $neutral++;
+                    break;
+            }
+        }
+        
+        $total = count($feedbackData);
+        
+        return [
+            'total' => $total,
+            'positive' => $positive,
+            'negative' => $negative,
+            'neutral' => $neutral,
+            'positive_percentage' => $total > 0 ? round(($positive / $total) * 100, 2) : 0,
+            'negative_percentage' => $total > 0 ? round(($negative / $total) * 100, 2) : 0,
+            'neutral_percentage' => $total > 0 ? round(($neutral / $total) * 100, 2) : 0,
+            'average_score' => $total > 0 ? round($totalScore / $total, 2) : 0,
+            'score_distribution' => [
+                'min' => $total > 0 ? min($scores) : 0,
+                'max' => $total > 0 ? max($scores) : 0,
+                'median' => $total > 0 ? $this->calculateMedian($scores) : 0
+            ]
+        ];
+    }
+
+    /**
+     * Get sentiment trend over time (monthly)
+     * 
+     * @param int $months Number of months to include
+     * @return array Monthly sentiment trend data
+     */
+    public function getSentimentTrend(int $months = 12): array
+    {
+        $trend = [];
+        
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $date = date('Y-m', strtotime("-{$i} months"));
+            $startDate = $date . '-01';
+            $endDate = date('Y-m-t', strtotime($startDate));
+            
+            $monthlyData = $this->getSentimentStatistics([
+                'start_date' => $startDate,
+                'end_date' => $endDate
+            ]);
+            
+            $trend[] = [
+                'month' => date('F Y', strtotime($startDate)),
+                'average_score' => $monthlyData['average_score'],
+                'positive_percentage' => $monthlyData['positive_percentage'],
+                'negative_percentage' => $monthlyData['negative_percentage'],
+                'neutral_percentage' => $monthlyData['neutral_percentage'],
+                'total_feedbacks' => $monthlyData['total']
+            ];
+        }
+        
+        return $trend;
+    }
+
+    /**
+     * Get feedback with negative sentiment (for review)
+     * 
+     * @param array $filters Optional filters
+     * @return array Negative feedback records
+     */
+    public function getNegativeFeedback(array $filters = []): array
+    {
+        $db = \Config\Database::connect();
+        
+        $builder = $db->table($this->table)
+            ->where('status', 'submitted')
+            ->where('sentiment_label', 'negative');
+        
+        if (!empty($filters['counselor_id'])) {
+            $builder->where('counselor_id', $filters['counselor_id']);
+        }
+        
+        if (!empty($filters['start_date'])) {
+            $builder->where('submitted_at >=', $filters['start_date']);
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $builder->where('submitted_at <=', $filters['end_date']);
+        }
+        
+        return $builder->orderBy('submitted_at', 'DESC')->get()->getResultArray();
+    }
+
+    /**
+     * Calculate median of an array
+     */
+    private function calculateMedian(array $arr): float
+    {
+        sort($arr);
+        $count = count($arr);
+        $mid = floor($count / 2);
+        
+        if ($count % 2) {
+            return $arr[$mid];
+        } else {
+            return ($arr[$mid - 1] + $arr[$mid]) / 2;
+        }
     }
 }

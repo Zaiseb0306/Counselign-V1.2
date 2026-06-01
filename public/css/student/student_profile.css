@@ -347,8 +347,13 @@ main {
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 8px;
+    flex-wrap: wrap;
 }
-.pds-header-row h4 { margin: 0; }
+.pds-header-row h4 {
+    margin: 0;
+    flex: 1 1 180px;
+    min-width: 0;
+}
 
 /* PDS container with inner scrolling */
 .pds-container {
@@ -358,7 +363,15 @@ main {
 }
 
 /* PDS header actions (Edit/Save) */
-.pds-actions { display: flex; gap: 8px; align-items: center; }
+.pds-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex: 1 1 260px;
+    min-width: 0;
+}
 .btn-compact { padding: 6px 10px; border-radius: 6px; font-size: 14px; }
 .btn-outline-secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
 .btn-outline-secondary:hover { background: #f3f4f6; }
@@ -711,20 +724,21 @@ footer {
     }
 
     /* Icon-only controls on tablet/phones */
-    .pds-actions { 
+    .pds-toolbar-actions { 
         gap: 8px; 
         display: flex;
         justify-content: flex-end;
+        width: 100%;
     }
-    .pds-actions .btn-compact { 
+    .pds-toolbar-actions .btn-compact { 
         font-size: 0; 
         padding: 10px 12px;
         min-width: auto;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
     }
-    .pds-actions .btn-compact i { 
+    .pds-toolbar-actions .btn-compact i { 
         font-size: 18px; 
         margin: 0 !important;
     }
@@ -1067,6 +1081,7 @@ footer {
         padding: 40px 30px;
         text-align: left;
         flex: 1;
+        min-width: 0; /* flex child may shrink so PDS buttons are not clipped */
         background: white;
         border-radius: 0 16px 16px 0;
     }
@@ -1175,8 +1190,7 @@ footer {
         margin: 0 !important;
     }
 
-    .pds-header-row { margin-bottom: 12px; }
-    .pds-actions { margin-left: auto; }
+    .pds-toolbar { align-items: center; }
 
     .btn-compact { padding: 6px 12px; }
 
@@ -1198,5 +1212,695 @@ footer {
 
     #previewPwdProof {
         min-width: fit-content;
+    }
+}
+
+/* ===== Vibe coding header sync (same as other student pages) ===== */
+:root {
+    --appt-navy: #060E57;
+    --appt-navy-soft: #0a1a7a;
+    --appt-surface: #ffffff;
+    --appt-muted: #64748b;
+    --appt-border: rgba(6, 14, 87, 0.08);
+    --appt-glow: rgba(6, 14, 87, 0.12);
+    --appt-radius: 14px;
+    --appt-radius-sm: 10px;
+    --appt-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --appt-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body.sp-page-body {
+    background-color: #eef1f8 !important;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(6, 14, 87, 0.07), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 110, 253, 0.06), transparent),
+        linear-gradient(180deg, #f4f6fc 0%, #eef1f8 100%) !important;
+    font-family: var(--appt-font) !important;
+}
+
+/* Top bar: css/utils/vibe_topbar.css */
+
+/* ===== Profile page — full vibe layout (hero + PDS panel) ===== */
+/* Main + profile card use full width beside sidebar (max out layout) */
+@media (min-width: 992px) {
+    .sp-page-body #mainWrapper > main,
+    .sp-page-body .main-wrapper > main {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
+        box-sizing: border-box;
+    }
+
+    .sp-page-body .sidebar.collapsed ~ #mainWrapper > main,
+    .sp-page-body .sidebar.collapsed ~ .main-wrapper > main {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+.sp-page-body main {
+    background: transparent !important;
+    padding: 0.75rem clamp(0.35rem, 1vw, 0.65rem) 2.5rem;
+    max-width: none;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+}
+
+.sp-page-body .profile-container {
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+    border-radius: 18px;
+    box-shadow:
+        0 4px 6px rgba(6, 14, 87, 0.03),
+        0 22px 48px var(--appt-glow);
+    /* Do not clip PDS header actions (.profile-container defaults to overflow:hidden) */
+    overflow: visible;
+    position: relative;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.sp-page-body .profile-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--appt-navy), #3b82f6, #8b5cf6);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Hero column: navy mesh + glass readouts */
+.sp-page-body .profile-header {
+    background:
+        radial-gradient(ellipse 120% 80% at 10% 0%, rgba(59, 130, 246, 0.35), transparent 55%),
+        radial-gradient(ellipse 90% 60% at 100% 100%, rgba(139, 92, 246, 0.22), transparent 50%),
+        linear-gradient(155deg, var(--appt-navy) 0%, #122069 42%, #1e1b4b 100%) !important;
+    color: #f8fafc;
+    padding-top: 2.25rem !important;
+    padding-bottom: 2.25rem !important;
+}
+
+.sp-page-body .profile-header::after {
+    background: var(--appt-surface);
+}
+
+.sp-page-body .profile-header .user-name,
+.sp-page-body .profile-header .form-label {
+    color: rgba(248, 250, 252, 0.92) !important;
+}
+
+.sp-page-body .profile-header .user-id {
+    color: #93c5fd !important;
+    font-family: var(--appt-mono);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+}
+
+.sp-page-body .profile-header .form-value {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #f1f5f9 !important;
+    backdrop-filter: blur(8px);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+    text-align: left;
+}
+
+.sp-page-body .profile-avatar {
+    border: 4px solid rgba(255, 255, 255, 0.38);
+    box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+.sp-page-body .profile-header .btn-password {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    color: #fff !important;
+}
+
+.sp-page-body .profile-header .btn-password:hover {
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    color: #fff !important;
+}
+
+.sp-page-body .profile-header .btn-update {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 55%, #8b5cf6 100%);
+    color: #fff !important;
+    box-shadow: 0 8px 22px rgba(59, 130, 246, 0.35);
+}
+
+.sp-page-body .profile-header .btn-update:hover {
+    filter: brightness(1.06);
+    transform: translateY(-2px);
+    color: #fff !important;
+}
+
+/* Hero actions: same row height (grid) — avoids one tall / one short when text wraps */
+.sp-page-body .profile-header .btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    align-items: stretch;
+    width: 100%;
+    max-width: min(100%, 22rem);
+    margin-inline: auto;
+    margin-top: 1.25rem;
+    flex-wrap: unset;
+    justify-content: center;
+}
+
+.sp-page-body .profile-header .btn-group .btn {
+    flex: unset !important;
+    min-width: 0 !important;
+    width: 100%;
+    margin: 0 !important;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.4rem;
+    padding: 0.65rem 0.6rem !important;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    hyphens: auto;
+    overflow-wrap: break-word;
+}
+
+.sp-page-body .profile-header .btn-group .btn i {
+    flex-shrink: 0;
+}
+
+@media (max-width: 360px) {
+    .sp-page-body .profile-header .btn-group {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sp-page-body .profile-header .profile-form {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.sp-page-body .profile-details {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 18%);
+    container-type: inline-size;
+    container-name: pds-panel;
+}
+
+/* PDS toolbar inside card (title + actions + tabs) */
+.sp-page-body .pds-card-head-vibe {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%) !important;
+    border-bottom: none !important;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.sp-page-body .pds-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem 1.25rem;
+    flex-wrap: wrap;
+    padding: 1.2rem 1.25rem 0.95rem;
+    position: relative;
+}
+
+.sp-page-body .pds-toolbar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--appt-navy), #3b82f6, #8b5cf6);
+}
+
+.sp-page-body .pds-toolbar-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.sp-page-body .pds-toolbar-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--appt-navy), #3b82f6);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px rgba(6, 14, 87, 0.22);
+}
+
+.sp-page-body .pds-toolbar-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--appt-navy);
+}
+
+.sp-page-body .pds-toolbar-sub {
+    font-size: 0.82rem;
+    color: var(--appt-muted);
+    margin-top: 0.25rem !important;
+    max-width: 36rem;
+    line-height: 1.4;
+}
+
+.sp-page-body .pds-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: min(100%, 12rem);
+}
+
+/* Page-wide .btn uses flex:1 — keep toolbar buttons inline */
+.sp-page-body .pds-toolbar-actions .btn,
+.sp-page-body .pds-toolbar-actions a.btn {
+    flex: 0 0 auto !important;
+    min-width: auto !important;
+    white-space: nowrap;
+}
+
+.sp-page-body .pds-toolbar-actions .btn-compact {
+    font-weight: 600;
+    border-radius: var(--appt-radius-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sp-page-body .pds-toolbar-actions .btn-secondary {
+    background: #f1f5f9;
+    color: var(--appt-navy);
+    border: 1px solid var(--appt-border);
+}
+
+.sp-page-body .pds-toolbar-actions .btn-secondary:hover {
+    background: #e2e8f0;
+    color: var(--appt-navy);
+}
+
+.sp-page-body .pds-toolbar-actions .btn-primary:not(:disabled) {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, #1d4ed8 100%);
+    border: none;
+    box-shadow: 0 4px 14px rgba(6, 14, 87, 0.28);
+}
+
+.sp-page-body .pds-toolbar-actions .btn-primary:not(:disabled):hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+.sp-page-body .pds-toolbar-actions .btn-outline-primary {
+    border: 1px solid rgba(6, 14, 87, 0.22);
+    color: var(--appt-navy);
+    background: #fff;
+}
+
+.sp-page-body .pds-toolbar-actions .btn-outline-primary:hover {
+    background: rgba(6, 14, 87, 0.06);
+    border-color: rgba(6, 14, 87, 0.35);
+    color: var(--appt-navy);
+}
+
+.sp-page-body .pds-container.card {
+    border: 1px solid var(--appt-border);
+    border-radius: var(--appt-radius);
+    box-shadow: 0 10px 32px var(--appt-glow);
+    background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+    overflow: hidden;
+}
+
+.sp-page-body .pds-tabs-wrap {
+    padding: 0 1rem 0.15rem;
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, #fff 55%);
+    border-top: 1px solid var(--appt-border);
+}
+
+.sp-page-body .pds-container .pds-nav-tabs.nav-tabs {
+    border-bottom: none;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+}
+
+.sp-page-body .pds-container .nav-tabs .nav-link {
+    font-weight: 600;
+    color: var(--appt-muted);
+    border: 1px solid transparent;
+    border-radius: var(--appt-radius-sm);
+    margin-bottom: 0.65rem;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sp-page-body .pds-container .nav-tabs .nav-link:hover {
+    color: var(--appt-navy);
+    background: rgba(6, 14, 87, 0.05);
+}
+
+.sp-page-body .pds-container .nav-tabs .nav-link.active {
+    color: #fff !important;
+    background: linear-gradient(135deg, var(--appt-navy) 0%, #2563eb 100%);
+    border-color: transparent;
+    box-shadow: 0 6px 18px rgba(6, 14, 87, 0.28);
+}
+
+.sp-page-body .pds-container .nav-tabs .nav-link.active i {
+    color: #fff !important;
+}
+
+.sp-page-body .pds-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(6, 14, 87, 0.28) transparent;
+    background: radial-gradient(ellipse 85% 45% at 50% 0%, rgba(59, 130, 246, 0.045), transparent 55%),
+        linear-gradient(180deg, #f8fafc 0%, #ffffff 28%);
+    padding: 1.15rem 1.25rem 1.5rem !important;
+}
+
+/* Layered PDS form: section strips + raised field cells */
+.sp-page-body .pds-scroll .pds-form-grid {
+    --pds-field-radius: 12px;
+    --pds-layer-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset,
+        0 4px 16px rgba(6, 14, 87, 0.07),
+        0 1px 3px rgba(6, 14, 87, 0.05);
+    --bs-gutter-x: 1.15rem;
+    --bs-gutter-y: 1.15rem;
+}
+
+/* Full-width section header (level above fields) */
+.sp-page-body .pds-scroll .pds-form-grid > .col-12:has(> h6.text-primary) {
+    position: relative;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.98) 100%);
+    border: 1px solid rgba(6, 14, 87, 0.1);
+    border-radius: 14px;
+    padding: 0.95rem 1.1rem 0.95rem 1.25rem;
+    margin-top: 0.35rem;
+    margin-bottom: 0.15rem;
+    box-shadow: var(--pds-layer-shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid > .col-12:has(> h6.text-primary)::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--appt-navy), #3b82f6, #6366f1);
+    border-radius: 4px 0 0 4px;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid > .col-12:has(> h6.text-primary) h6.text-primary {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    padding-left: 0.35rem;
+}
+
+/* Subsection labels (e.g. Award 2 / Award 3) */
+.sp-page-body .pds-scroll .pds-form-grid > .col-12:has(> h6.text-secondary) {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px dashed rgba(6, 14, 87, 0.14);
+    border-radius: 10px;
+    padding: 0.55rem 0.85rem;
+    margin-top: 0.35rem;
+    margin-bottom: 0.1rem;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid > .col-12:has(> h6.text-secondary) h6 {
+    margin-bottom: 0 !important;
+}
+
+/* Each field column = small “layer” card */
+.sp-page-body .pds-scroll .pds-form-grid > [class*="col-"]:not(.col-12) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0; /* flex + container queries: columns may shrink */
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(6, 14, 87, 0.11);
+    border-radius: var(--pds-field-radius);
+    padding: 0.85rem 1rem 0.95rem;
+    box-shadow: var(--pds-layer-shadow);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid > [class*="col-"]:not(.col-12):focus-within {
+    border-color: rgba(59, 130, 246, 0.45);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.8) inset,
+        0 8px 28px rgba(59, 130, 246, 0.12),
+        0 0 0 1px rgba(59, 130, 246, 0.12);
+    transform: translateY(-1px);
+}
+
+.sp-page-body .pds-container h6.text-primary {
+    color: var(--appt-navy) !important;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.85rem !important;
+    border-bottom: 2px solid rgba(6, 14, 87, 0.08);
+}
+
+.sp-page-body .pds-container h6.text-primary i {
+    color: #3b82f6;
+}
+
+.sp-page-body .pds-container .form-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+    font-weight: 700;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid .form-label {
+    margin-bottom: 0.15rem;
+    line-height: 1.3;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+.sp-page-body .pds-container .form-control,
+.sp-page-body .pds-container .form-select {
+    border: 1px solid rgba(6, 14, 87, 0.14);
+    border-radius: var(--appt-radius-sm);
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    color: #0f172a;
+    caret-color: var(--appt-navy);
+    -webkit-text-fill-color: #0f172a;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid .form-control::placeholder {
+    color: #64748b;
+    opacity: 1;
+}
+
+/* Do not use `background` shorthand on selects — it strips Bootstrap’s chevron SVG */
+.sp-page-body .pds-scroll .pds-form-grid > [class*="col-"]:not(.col-12) .form-control:not(textarea),
+.sp-page-body .pds-scroll .pds-form-grid > [class*="col-"]:not(.col-12) .form-select {
+    background-color: #ffffff;
+    border-color: rgba(6, 14, 87, 0.14);
+    min-height: 2.55rem;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid > [class*="col-"]:not(.col-12) textarea.form-control {
+    min-height: 5.5rem;
+    resize: vertical;
+    white-space: normal;
+    background-color: #ffffff;
+}
+
+/* Extra right padding for long option text — avoid overflow/ellipsis on native <select> (hides values in some browsers) */
+.sp-page-body .pds-scroll .pds-form-grid .form-select {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-right: 2.65rem;
+    line-height: 1.45;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid .form-control:disabled,
+.sp-page-body .pds-scroll .pds-form-grid .form-select:disabled {
+    color: #1e293b !important;
+    -webkit-text-fill-color: #1e293b !important;
+    background-color: #e8edf5 !important;
+    border-color: rgba(6, 14, 87, 0.16);
+    opacity: 1 !important;
+    cursor: not-allowed;
+}
+
+.sp-page-body .pds-scroll .pds-form-grid .form-control:focus,
+.sp-page-body .pds-scroll .pds-form-grid .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    outline: none;
+    color: #0f172a;
+    -webkit-text-fill-color: #0f172a;
+}
+
+.sp-page-body .pds-container .form-control:focus,
+.sp-page-body .pds-container .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    outline: none;
+    color: #0f172a;
+    -webkit-text-fill-color: #0f172a;
+}
+
+.sp-page-body .pds-container .form-control[readonly] {
+    background-color: #f1f5f9;
+    color: #1e293b !important;
+    -webkit-text-fill-color: #1e293b !important;
+}
+
+/* Chrome autofill: keep text dark on white */
+.sp-page-body .pds-scroll .pds-form-grid .form-control:-webkit-autofill,
+.sp-page-body .pds-scroll .pds-form-grid .form-control:-webkit-autofill:hover,
+.sp-page-body .pds-scroll .pds-form-grid .form-control:-webkit-autofill:focus,
+.sp-page-body .pds-scroll .pds-form-grid textarea.form-control:-webkit-autofill {
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    transition: background-color 99999s ease-out 0s;
+}
+
+/* Modals on profile page */
+.sp-page-body .modal-content {
+    border: 1px solid var(--appt-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(6, 14, 87, 0.22);
+}
+
+.sp-page-body .modal-header {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, #1e3a8a 100%);
+    color: #fff;
+    border-bottom: none;
+    padding: 1.1rem 1.35rem;
+}
+
+.sp-page-body .modal-header .modal-title {
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.sp-page-body .modal-header .modal-title i {
+    color: #93c5fd !important;
+}
+
+.sp-page-body .modal-header .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.85;
+}
+
+.sp-page-body .modal-footer {
+    background: #f8fafc;
+    border-top: 1px solid var(--appt-border);
+}
+
+/* Desktop: give PDS more horizontal room than a fixed hero min-width */
+@media (min-width: 992px) {
+    .sp-page-body .profile-header {
+        border-radius: 0;
+        min-width: 0;
+        flex: 0 0 clamp(200px, 22vw, 280px);
+        max-width: 300px;
+    }
+
+    .sp-page-body .profile-details {
+        border-radius: 0;
+        padding-top: 2rem;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+}
+
+/* PDS width follows panel, not viewport — stack fields when the PDS column is narrow */
+@container pds-panel (max-width: 1020px) {
+    .sp-page-body .pds-scroll .pds-form-grid > [class*="col-"]:not(.col-12) {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+}
+
+@container pds-panel (min-width: 1021px) and (max-width: 1320px) {
+    .sp-page-body .pds-scroll .pds-form-grid > [class*="col-md-3"]:not(.col-12),
+    .sp-page-body .pds-scroll .pds-form-grid > [class*="col-md-2"]:not(.col-12) {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    .sp-page-body .pds-scroll .pds-form-grid > [class*="col-md-4"]:not(.col-12),
+    .sp-page-body .pds-scroll .pds-form-grid > [class*="col-md-6"]:not(.col-12) {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+}
+
+/* Mobile: compact toolbar, readable tabs */
+@media (max-width: 576px) {
+    .sp-page-body .pds-toolbar-sub {
+        display: none;
+    }
+
+    .sp-page-body .pds-toolbar {
+        padding: 1rem 0.85rem 0.75rem;
+    }
+
+    .sp-page-body .pds-toolbar-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 0.95rem;
+    }
+
+    .sp-page-body .pds-toolbar-title {
+        font-size: 1.05rem;
+    }
+}
+
+/* Mobile tab overrides: keep icon tabs readable with vibe active state */
+@media (max-width: 768px) {
+    .sp-page-body .pds-container .nav-tabs .nav-link.active {
+        border-bottom-color: transparent;
+        background: linear-gradient(135deg, var(--appt-navy) 0%, #2563eb 100%);
     }
 }

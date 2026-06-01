@@ -3,9 +3,17 @@
 namespace App\Controllers\Counselor;
 
 use App\Controllers\BaseController;
+use App\Models\StudentFeedbackAnalyticsModel;
 
 class PendingFeedback extends BaseController
 {
+    private $analyticsModel;
+
+    public function __construct()
+    {
+        $this->analyticsModel = new StudentFeedbackAnalyticsModel();
+    }
+
     public function index()
     {
         if (!session()->get('logged_in') || session()->get('role') !== 'counselor') {
@@ -13,6 +21,121 @@ class PendingFeedback extends BaseController
         }
 
         return view('counselor/pending_feedback');
+    }
+
+    /**
+     * View submitted feedback with sentiment analysis
+     */
+    public function viewFeedback()
+    {
+        if (!session()->get('logged_in') || session()->get('role') !== 'counselor') {
+            return redirect()->to('/');
+        }
+
+        $counselorId = session()->get('user_id_display') ?? session()->get('user_id');
+        $db = \Config\Database::connect();
+        
+        // Get filters
+        $sentimentLabel = strtolower(trim((string) $this->request->getGet('sentiment_label')));
+        $startDate = $this->normalizeDateInput($this->request->getGet('start_date'));
+        $endDate = $this->normalizeDateInput($this->request->getGet('end_date'));
+
+        // Build query for this counselor's feedback
+        $builder = $db->table('student_feedback sf')
+            ->select('sf.*, a.preferred_date, a.preferred_time, a.consultation_type, 
+                     u.username as student_name')
+            ->join('appointments a', 'sf.appointment_id = a.id', 'left')
+            ->join('users u', 'sf.student_id = u.user_id', 'left')
+            ->where('sf.status', 'submitted')
+            ->where('sf.counselor_id', $counselorId)
+            ->orderBy('sf.submitted_at', 'DESC');
+
+        // Apply filters
+        if (!empty($sentimentLabel)) {
+            $builder->where('sf.sentiment_label', $sentimentLabel);
+        }
+        if (!empty($startDate)) {
+            $builder->where('DATE(sf.submitted_at) >=', $startDate);
+        }
+        if (!empty($endDate)) {
+            $builder->where('DATE(sf.submitted_at) <=', $endDate);
+        }
+
+        $feedbacks = $builder->get()->getResultArray();
+
+        $feedbackService = new \App\Services\FeedbackQuestionsService();
+        $feedbacks = $feedbackService->enrichFeedbacksWithResponses($feedbacks);
+        $activeQuestions = $feedbackService->getActiveQuestions();
+
+        // Keep statistics aligned with selected date range filters.
+        $analyticsFilters = ['counselor_id' => $counselorId];
+        if (!empty($startDate)) {
+            $analyticsFilters['start_date'] = $startDate . ' 00:00:00';
+        }
+        if (!empty($endDate)) {
+            $analyticsFilters['end_date'] = $endDate . ' 23:59:59';
+        }
+
+        $sentimentStats = $this->analyticsModel->getSentimentStatistics($analyticsFilters);
+        $negativeFeedback = $this->analyticsModel->getNegativeFeedback($analyticsFilters);
+
+        return view('counselor/view_feedback', [
+            'feedbacks' => $feedbacks,
+            'activeQuestions' => $activeQuestions,
+            'sentiment_stats' => $sentimentStats,
+            'negative_feedback' => $negativeFeedback,
+            'filters' => [
+                'sentiment_label' => $sentimentLabel,
+                'start_date' => $startDate,
+                'end_date' => $endDate
+            ]
+        ]);
+    }
+
+    /**
+     * Get feedback data as JSON (for AJAX)
+     */
+    public function getFeedbackData()
+    {
+        if (!session()->get('logged_in') || session()->get('role') !== 'counselor') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ], 401);
+        }
+
+        $counselorId = session()->get('user_id_display') ?? session()->get('user_id');
+        $db = \Config\Database::connect();
+        
+        $sentimentLabel = strtolower(trim((string) $this->request->getGet('sentiment_label')));
+        $startDate = $this->normalizeDateInput($this->request->getGet('start_date'));
+        $endDate = $this->normalizeDateInput($this->request->getGet('end_date'));
+
+        $builder = $db->table('student_feedback sf')
+            ->select('sf.*, a.preferred_date, a.preferred_time, a.consultation_type, 
+                     u.username as student_name')
+            ->join('appointments a', 'sf.appointment_id = a.id', 'left')
+            ->join('users u', 'sf.student_id = u.user_id', 'left')
+            ->where('sf.status', 'submitted')
+            ->where('sf.counselor_id', $counselorId)
+            ->orderBy('sf.submitted_at', 'DESC');
+
+        if (!empty($sentimentLabel)) {
+            $builder->where('sf.sentiment_label', $sentimentLabel);
+        }
+        if (!empty($startDate)) {
+            $builder->where('DATE(sf.submitted_at) >=', $startDate);
+        }
+        if (!empty($endDate)) {
+            $builder->where('DATE(sf.submitted_at) <=', $endDate);
+        }
+
+        $feedbacks = $builder->get()->getResultArray();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'feedbacks' => $feedbacks
+        ]);
     }
 
     public function getPendingFeedbackAppointments()
@@ -39,7 +162,8 @@ class PendingFeedback extends BaseController
                 log_message('info', 'PendingFeedback - debug results: ' . json_encode($debugResult));
             }
 
-            // Query to get appointments with feedback_pending status for this counselor
+            // Query to get appointments that still need student feedback for this counselor.
+            // Some records may already be marked "completed" but still have no feedback row.
             $query = "SELECT
                         a.id,
                         a.student_id,
@@ -55,10 +179,12 @@ class PendingFeedback extends BaseController
                         COALESCE(CONCAT(spi.first_name, ' ', spi.last_name), u.username) AS student_name,
                         c.name as counselor_name
                       FROM appointments a
+                      LEFT JOIN student_feedback sf ON sf.appointment_id = a.id
                       LEFT JOIN users u ON a.student_id = u.user_id
                       LEFT JOIN student_personal_info spi ON spi.student_id = u.user_id
                       LEFT JOIN counselors c ON a.counselor_preference = c.counselor_id
-                      WHERE a.status = 'feedback_pending'
+                      WHERE sf.id IS NULL
+                      AND a.status IN ('feedback_pending', 'completed')
                       AND a.counselor_preference = ?
                       ORDER BY a.preferred_date DESC";
 
@@ -168,5 +294,34 @@ class PendingFeedback extends BaseController
                 'message' => 'An error occurred: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Normalize input date into Y-m-d, accepts Y-m-d and d/m/Y.
+     */
+    private function normalizeDateInput($date): ?string
+    {
+        $value = trim((string) $date);
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value;
+        }
+
+        if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $value)) {
+            $parsed = \DateTime::createFromFormat('d/m/Y', $value);
+            if ($parsed instanceof \DateTime) {
+                return $parsed->format('Y-m-d');
+            }
+        }
+
+        $timestamp = strtotime($value);
+        if ($timestamp === false) {
+            return null;
+        }
+
+        return date('Y-m-d', $timestamp);
     }
 }

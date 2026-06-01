@@ -46,8 +46,8 @@ class UserModel extends Model
 
     public function generateVerificationToken(): string
     {
-        // Generate a 6-character uppercase alphanumeric token (A-Z, 0-9)
-        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        // Generate a 6-character numeric token (0-9)
+        $characters = '0123456789';
         $charactersLength = strlen($characters);
         $tokenLength = 6;
 

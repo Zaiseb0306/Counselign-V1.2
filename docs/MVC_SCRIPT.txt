@@ -1,0 +1,473 @@
+================================================================================
+COUNSELIGN — MVC PRESENTATION SCRIPT (Track A)
+================================================================================
+
+System:  Counselign — UGC Counseling Appointment Management System
+Stack:   CodeIgniter 4 · MariaDB · Apache (XAMPP)
+Purpose: Oral defense script for STRICT MVC (Model → Database, View → UI,
+         Controller → Business Logic)
+
+Fill in: [Member names], [Course/Section], test accounts before defense.
+
+Related: docs/system_architecture.md, docs/erd.md, docs/TRACK_A_D_PRESENTATION_SCRIPT.txt
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+  1.  One-minute MVC summary (opening)
+  2.  The three layers in Counselign
+  3.  Folder map (what lives where)
+  4.  Request flow diagram (say aloud)
+  5.  Example flows (5 demos with file paths)
+  6.  Live demo script (3 minutes)
+  7.  Slide content for MVC
+  8.  Defense Q&A (MVC only)
+  9.  Common panel mistakes to avoid
+ 10.  Quick reference card
+
+================================================================================
+1. ONE-MINUTE MVC SUMMARY (OPENING)
+================================================================================
+
+Speaker: [Member ___]
+Duration: 60 seconds
+
+SAY:
+
+  "Counselign uses strict MVC on CodeIgniter 4.
+
+   MODEL — talks to the database. Files in app/Models/. Example:
+   AppointmentModel, UserModel, StudentPDSModel. They run queries,
+   validation rules, and inserts/updates/deletes.
+
+   VIEW — is the user interface only. Files in app/Views/. HTML, forms,
+   and display logic. Views never connect to the database directly.
+
+   CONTROLLER — is business logic. Files in app/Controllers/. They receive
+   HTTP requests, check login and role, validate input, call models or the
+   database, then return a view or JSON.
+
+   Flow: Browser → Route → Controller → Model → Database → Controller → View → Browser.
+
+   Track A requires this separation. We will show it live on appointment booking."
+
+================================================================================
+2. THE THREE LAYERS IN COUNSELIGN
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1 MODEL (Model → Database)
+--------------------------------------------------------------------------------
+
+ROLE:
+  - Store and retrieve data from MariaDB
+  - Define table name, allowed fields, validation rules
+  - Optional: transactions (BaseModel), complex queries
+
+LOCATION:
+  app/Models/
+
+KEY FILES:
+  AppointmentModel.php       → table: appointments
+  UserModel.php              → table: users
+  CounselorModel.php         → table: counselors
+  StudentPDSModel.php        → aggregates many student_* tables
+  ResourceModel.php          → table: resources
+  AnnouncementModel.php      → table: announcements
+  BaseModel.php              → atomic transactions (ACID)
+
+WHAT MODEL DOES NOT DO:
+  - No HTML output
+  - No session/login checks (that is Controller)
+  - No deciding which page user sees
+
+SAY ONE LINE:
+  "The Model layer is our bridge to MySQL — one class per main table or domain."
+
+--------------------------------------------------------------------------------
+2.2 VIEW (View → User Interface)
+--------------------------------------------------------------------------------
+
+ROLE:
+  - Render pages the user sees
+  - Forms, tables, dashboards, modals
+  - Client-side JavaScript for AJAX (calls controller URLs)
+
+LOCATION:
+  app/Views/
+
+KEY FILES BY ROLE:
+  Student:
+    student/student_schedule_appointment.php  — book appointment form
+    student/my_appointments.php               — appointment list
+    student/feedback.php                      — feedback form
+    student/dashboard.php
+  Counselor:
+    counselor/appointments.php
+    counselor/dashboard.php
+  Admin:
+    admin/appointments.php
+    admin/dashboard.php
+    admin/feedback_questions.php
+    admin/data_analytics.php
+  Public:
+    landing.php                               — login page
+
+WHAT VIEW DOES NOT DO:
+  - No INSERT/UPDATE/DELETE SQL
+  - No password verification
+  - No role authorization
+
+SAY ONE LINE:
+  "If you grep app/Views for database insert, you should find nothing — by design."
+
+--------------------------------------------------------------------------------
+2.3 CONTROLLER (Controller → Business Logic)
+--------------------------------------------------------------------------------
+
+ROLE:
+  - Entry point for every feature
+  - HTTP method + URL → one controller method
+  - Auth: session logged_in, role student/counselor/admin
+  - Validation, workflow (pending → approved → completed)
+  - Calls Model or $db, returns view() or setJSON()
+
+LOCATION:
+  app/Controllers/
+  app/Controllers/Student/
+  app/Controllers/Counselor/
+  app/Controllers/Admin/
+
+ROUTING:
+  app/Config/Routes.php maps URLs to Controller::method
+
+KEY FILES:
+  Auth.php                      — login, signup, landing
+  Student/Appointment.php       — schedule, save, list, cancel
+  Student/Feedback.php          — feedback form + submit
+  Student/PDS.php               — load/save PDS
+  Admin/Appointments.php        — approve, reschedule, list all
+  Admin/FeedbackQuestions.php   — CRUD feedback questions
+  Admin/Resources.php           — CRUD resources
+  Counselor/Appointments.php    — counselor appointment actions
+
+WHAT CONTROLLER DOES NOT DO:
+  - Should not embed long HTML (use view())
+  - Should not duplicate all SQL when a Model method exists (project uses mix of Model + query builder)
+
+SAY ONE LINE:
+  "Controllers orchestrate — they decide WHAT happens; models decide HOW data is stored."
+
+================================================================================
+3. FOLDER MAP
+================================================================================
+
+Counselign/
+  app/
+    Config/
+      Routes.php          ← URL → Controller (not MVC layer, but starts request)
+    Controllers/          ← CONTROLLER
+      Auth.php
+      BaseController.php
+      Student/
+      Counselor/
+      Admin/
+    Models/               ← MODEL
+      BaseModel.php
+      AppointmentModel.php
+      UserModel.php
+      ...
+    Views/                ← VIEW
+      landing.php
+      student/
+      counselor/
+      admin/
+    Services/             ← Helper logic (e.g. SentimentAnalysisService)
+                          ← Used BY controller; not View or Model
+  public/                 ← CSS, JS, images (static assets)
+  writable/               ← uploads, sessions, logs
+
+================================================================================
+4. REQUEST FLOW (SAY ALOUD + DRAW ON SLIDE)
+================================================================================
+
+  [USER BROWSER]
+        |
+        |  HTTP GET or POST
+        v
+  [Apache / XAMPP]
+        |
+        v
+  [Routes.php]  picks Controller::method
+        |
+        v
+  [CONTROLLER]  auth + validation + business rules
+        |
+        +-------> [MODEL] ----SQL----> [MariaDB]
+        |              |
+        |              +--- rows / result
+        v
+  [VIEW] or JSON response
+        |
+        v
+  [USER BROWSER]  sees page or message
+
+================================================================================
+5. EXAMPLE FLOWS (WITH EXACT FILES)
+================================================================================
+
+--------------------------------------------------------------------------------
+FLOW A — Login (public → session)
+--------------------------------------------------------------------------------
+
+  URL:      GET  /                          → Auth::index
+  URL:      POST auth/login                  → Auth::login
+
+  VIEW:     app/Views/landing.php
+  CONTROLLER: app/Controllers/Auth.php
+              - login() validates email/password
+              - uses UserModel to find user
+              - sets session: logged_in, role, user_id
+  MODEL:    app/Models/UserModel.php → users table
+
+  SAY:
+    "Login VIEW shows the form. CONTROLLER Auth::login validates and checks
+     credentials via UserModel. MODEL queries users. Controller sets session
+     and returns JSON redirect URL by role — not the model."
+
+--------------------------------------------------------------------------------
+FLOW B — Student CREATE appointment
+--------------------------------------------------------------------------------
+
+  URL:      GET  student/schedule-appointment  → Appointment::schedule()
+  URL:      POST student/appointment/save      → Appointment::save()
+
+  VIEW:     app/Views/student/student_schedule_appointment.php
+  CONTROLLER: app/Controllers/Student/Appointment.php
+              - schedule() returns view if role === student
+              - save() validates POST fields, checks pending appointment,
+                inserts row (often via $db->table('appointments'))
+  MODEL:    app/Models/AppointmentModel.php (validation rules, table config)
+  DATABASE: appointments (student_id, preferred_date, status = pending)
+
+  POST field names (for demo):
+    preferredDate, preferredTime, methodType, consultationType,
+    purpose, counselorPreference, description
+
+  SAY:
+    "CREATE: View is the form. Controller save() is business logic — only one
+     pending appointment, required fields. Data lands in appointments via
+     model/database layer. student_id links to users — our relationship."
+
+--------------------------------------------------------------------------------
+FLOW C — Admin/Counselor READ + UPDATE appointment status
+--------------------------------------------------------------------------------
+
+  URL:      GET  admin/appointments            → Appointments::index()
+  URL:      GET  admin/appointments/getAll    → Appointments::getAll()
+  URL:      POST admin/appointments/updateAppointmentStatus
+
+  VIEW:     app/Views/admin/appointments.php (or view-all)
+  CONTROLLER: app/Controllers/Admin/Appointments.php
+  MODEL:    AppointmentModel / query builder with JOINs
+  DATABASE: UPDATE appointments SET status = 'approved' WHERE id = ?
+
+  SAY:
+    "READ: Controller getAll() runs SELECT with JOINs; View displays table.
+     UPDATE: Controller updateAppointmentStatus() enforces who can approve;
+     Model executes UPDATE. Same MVC pattern, different HTTP action."
+
+--------------------------------------------------------------------------------
+FLOW D — Student feedback submit (Controller + Service + DB)
+--------------------------------------------------------------------------------
+
+  URL:      GET  student/feedback?appointment_id={id}
+  URL:      POST student/feedback/submit
+
+  VIEW:     app/Views/student/feedback.php
+  CONTROLLER: app/Controllers/Student/Feedback.php
+              - submit() verifies feedback_pending
+              - calls SentimentAnalysisService (business logic helper)
+              - INSERT student_feedback, UPDATE appointments
+  MODEL:    StudentFeedbackAnalyticsModel (analytics read side)
+  SERVICE:  app/Services/SentimentAnalysisService.php
+  DATABASE: student_feedback, appointments
+
+  NOTE FOR PANEL:
+    Services are not a fourth MVC layer — they are helpers called FROM the
+    controller. Still no SQL in the View.
+
+--------------------------------------------------------------------------------
+FLOW E — Student PDS save (multi-model, atomic)
+--------------------------------------------------------------------------------
+
+  URL:      GET  student/pds/load
+  URL:      POST student/pds/save
+
+  CONTROLLER: app/Controllers/Student/PDS.php
+  MODELS:   StudentPDSModel + StudentPersonalInfoModel, StudentAcademicInfoModel,
+            StudentFamilyInfoModel, ... (many tables, one student_id)
+  VIEW:     PDS forms / preview (PDS_preview.php)
+
+  SAY:
+    "PDS shows MVC at scale: one controller coordinates many models writing
+     related tables. StudentPDSModel and BaseModel support atomic saves —
+     all sections save or none, for data consistency."
+
+================================================================================
+6. LIVE DEMO SCRIPT (3 MINUTES) — MVC ONLY
+================================================================================
+
+Speaker: [Member ___]
+Before demo: XAMPP on, student + admin logged in two tabs.
+
+----------------------------------------------------------------------
+STEP 1 (45 sec) — Show three files in IDE
+----------------------------------------------------------------------
+
+  1. app/Views/student/student_schedule_appointment.php     → "This is VIEW"
+  2. app/Controllers/Student/Appointment.php → save()         → "This is CONTROLLER"
+  3. app/Models/AppointmentModel.php                        → "This is MODEL"
+
+  SAY:
+    "Three files, three jobs. No SQL in the view file."
+
+----------------------------------------------------------------------
+STEP 2 (60 sec) — CREATE in browser
+----------------------------------------------------------------------
+
+  1. Student tab: http://localhost/Counselign/public/student/schedule-appointment
+  2. Fill form, submit
+  3. Optional: phpMyAdmin → appointments → newest row
+
+  SAY:
+    "Browser POST goes to Controller save(), not to the view. New row proves
+     Model/Database layer worked."
+
+----------------------------------------------------------------------
+STEP 3 (45 sec) — READ + UPDATE as admin
+----------------------------------------------------------------------
+
+  1. Admin tab: http://localhost/Counselign/public/admin/appointments
+  2. Show list (READ — controller queried DB, view displays)
+  3. Approve one appointment (UPDATE — controller changes status)
+
+  SAY:
+    "Same table, different controller methods: getAll for READ,
+     updateAppointmentStatus for UPDATE. View only reflects data."
+
+----------------------------------------------------------------------
+STEP 4 (30 sec) — Closing MVC line
+----------------------------------------------------------------------
+
+  SAY:
+    "Track A MVC is proven: Model persists to MariaDB, View renders UI,
+     Controller owns rules and security. Questions welcome on any layer."
+
+================================================================================
+7. SLIDE CONTENT FOR MVC (copy to PowerPoint)
+================================================================================
+
+SLIDE: MVC Overview
+  - Three boxes: MODEL | VIEW | CONTROLLER
+  - Arrows: User → Controller → Model → DB → Controller → View → User
+
+SLIDE: Counselign folders
+  - app/Models/     → Database
+  - app/Views/      → UI
+  - app/Controllers/ → Business logic
+
+SLIDE: Example — Book appointment
+  - View:  student_schedule_appointment.php
+  - Controller: Student\Appointment::save()
+  - Table: appointments
+
+SLIDE: Rules we follow
+  - No SQL in Views
+  - No HTML in Models
+  - Auth and workflow in Controllers only
+
+Optional screenshot: IDE split with 3 files side by side
+
+================================================================================
+8. DEFENSE Q&A — MVC ONLY
+================================================================================
+
+Q: What goes in Model vs Controller?
+A: Model = data access, table rules, queries. Controller = who is allowed,
+   what status transition is valid, which view to show, JSON vs HTML.
+
+Q: Do you always use Model for every query?
+A: CodeIgniter allows $db in controllers; we still keep SQL out of Views.
+   AppointmentModel centralizes appointment rules; some admin lists use
+   controller queries with JOINs for performance.
+
+Q: Where is routing?
+A: app/Config/Routes.php — e.g. student group maps to App\Controllers\Student.
+
+Q: Is SentimentAnalysisService part of MVC?
+A: It is a Service helper. Controller calls it; it is not a View or Model.
+   Keeps Feedback controller readable.
+
+Q: How do you enforce student only sees own data?
+A: Controller adds WHERE student_id = session user_id before query/display.
+
+Q: Difference from MVVM or MVP?
+A: We use classic MVC per capstone requirement. CI4 is MVC-oriented;
+   Views are server-rendered PHP templates.
+
+Q: Show DELETE in MVC.
+A: Admin FeedbackQuestions::delete() — Controller authorizes admin,
+   removes row from feedback_questions. View is admin/feedback_questions.php.
+
+================================================================================
+9. COMMON PANEL MISTAKES — HOW TO RESPOND
+================================================================================
+
+Panel: "Your controller has SQL — is that still MVC?"
+You:  "MVC means Views stay clean. Controllers may use Models or query builder;
+       business rules remain in the controller method. We are improving toward
+       more Model methods where queries repeat."
+
+Panel: "JavaScript calls the API — where is MVC?"
+You:  "AJAX still hits a Controller method. JavaScript is part of the View
+       layer's client side; server MVC is unchanged."
+
+Panel: "Flutter app?"
+You:  "Defense web stack is CodeIgniter MVC. Mobile would consume same
+       controller endpoints as API if deployed."
+
+================================================================================
+10. QUICK REFERENCE CARD
+================================================================================
+
+LAYER      | FOLDER              | EXAMPLE FILE
+-----------|---------------------|----------------------------------
+Model      | app/Models/         | AppointmentModel.php
+View       | app/Views/          | student/student_schedule_appointment.php
+Controller | app/Controllers/    | Student/Appointment.php
+Routes     | app/Config/         | Routes.php
+
+STUDENT APPOINTMENT MVC PATH:
+  View:       student/student_schedule_appointment.php
+  Route POST: student/appointment/save
+  Controller: Student\Appointment::save()
+  Table:      appointments
+
+ADMIN APPROVE MVC PATH:
+  View:       admin/appointments.php
+  Route POST: admin/appointments/updateAppointmentStatus
+  Controller: Admin\Appointments::updateAppointmentStatus()
+  Table:      appointments (status column)
+
+CRUD IN MVC WORDS:
+  Create  → Controller save/create + Model insert
+  Read    → Controller index/getAll + Model select + View list
+  Update  → Controller update/status + Model update
+  Delete  → Controller delete + Model/table delete
+
+================================================================================
+Document: MVC_SCRIPT.txt — Counselign Track A MVC oral defense script
+Version: 1.0
+================================================================================

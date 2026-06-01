@@ -1,3 +1,59 @@
+window.ACCOUNT_PROFILE_CONFIG = {
+    rolePrefix: 'student',
+    updateUrl: 'student/profile/update',
+    pictureUrl: 'student/profile/picture',
+    loadUrl: 'student/profile/get',
+    passwordUrl: 'update-password',
+    storageKey: 'student_profile_picture',
+    emailPreviewId: 'student-email-preview',
+    usernamePreviewId: 'student-username-preview',
+    displayNameId: 'student-display-name',
+    accountIdId: 'display-userid',
+    redirectOnAuthFail: 'student/dashboard',
+    notify: function (message, type) {
+        if (typeof openAlertModal === 'function') {
+            openAlertModal(message, type === 'error' ? 'error' : (type === 'success' ? 'success' : 'warning'));
+        } else if (window.AccountProfileActions) {
+            window.AccountProfileActions.showNotification(message, type);
+        }
+    },
+    onFieldUpdated: function (field, value) {
+        const username = field === 'username'
+            ? value
+            : (document.querySelector('[data-field="username"] .acct-field-value')?.textContent || '');
+        const email = field === 'email'
+            ? value
+            : (document.querySelector('[data-field="email"] .acct-field-value')?.textContent || '');
+        const displayName = document.getElementById('student-display-name')?.textContent || username;
+        syncStudentAccountDisplay(username, email, displayName);
+        const personalEmail = document.getElementById('personalEmail');
+        if (personalEmail && field === 'email') personalEmail.value = value;
+    },
+    onProfileDataLoaded: function (data) {
+        const displayName = (data.full_name || data.name || data.username || 'Student').trim();
+        syncStudentAccountDisplay(data.username || '', data.email || '', displayName);
+        const personalEmail = document.getElementById('personalEmail');
+        if (personalEmail) personalEmail.value = data.email || '';
+    },
+};
+
+function setAcctPreview(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function syncStudentAccountDisplay(username, email, displayName) {
+    setAcctPreview('acct-username-value', username);
+    setAcctPreview('acct-email-value', email);
+    setAcctPreview('student-username-preview', username);
+    setAcctPreview('student-email-preview', email);
+    setAcctPreview('student-display-name', displayName || username);
+    const du = document.getElementById('display-username');
+    const de = document.getElementById('display-email');
+    if (du) du.textContent = username;
+    if (de) de.textContent = email;
+}
+
 // Function to resolve image URL (helper function)
 function resolveImageUrl(path) {
     if (!path) return (window.BASE_URL || '/') + 'Photos/profile.png';
@@ -19,163 +75,6 @@ function validateCourseYear(courseYear) {
     return re.test(courseYear);
 }
 
-// Function to save profile changes
-function saveProfileChanges() {
-    // Get the values from the modal inputs
-    const newUsername = document.getElementById('update-username').value.trim();
-    const newEmail = document.getElementById('update-email').value.trim();
-
-    SecureLogger.info('Saving profile changes:', { newUsername, newEmail });
-
-    // Validate inputs
-    if (!newUsername) {
-        openAlertModal('Please enter a username', 'warning');
-        return;
-    }
-
-    if (!newEmail) {
-        openAlertModal('Please enter an email address', 'warning');
-        return;
-    }
-
-    if (!validateEmail(newEmail)) {
-        openAlertModal('Please enter a valid email address', 'warning');
-        return;
-    }
-
-
-    // Create a FormData object to send the data
-    const formData = new FormData();
-    formData.append('username', newUsername);
-    formData.append('email', newEmail);
-
-    // Send the data to the server
-    fetch(window.BASE_URL + 'student/profile/update', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-    })
-        .then(response => response.json())
-        .then(async data => {
-            if (!data.success) {
-                throw new Error(data.message || 'Failed to update profile');
-            }
-
-            // If there is a selected picture, upload it next
-            const fileInput = document.getElementById('update-picture');
-            const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-            if (file) {
-                const picForm = new FormData();
-                picForm.append('profile_picture', file);
-                const resp = await fetch(window.BASE_URL + 'student/profile/picture', {
-                    method: 'POST',
-                    body: picForm,
-                    credentials: 'include'
-                });
-                const picData = await resp.json();
-                if (!picData.success) {
-                    throw new Error(picData.message || 'Failed to upload picture');
-                }
-                // Update on-page avatar
-                const imgEl = document.getElementById('profile-img');
-                if (imgEl && picData.picture_url) {
-                    const newUrl = resolveImageUrl(picData.picture_url) + '?t=' + Date.now();
-                    imgEl.src = newUrl;
-                    try { localStorage.setItem('student_profile_picture', newUrl); } catch (e) { }
-                }
-            }
-
-            // Update the display values
-            document.getElementById('display-username').textContent = newUsername;
-            document.getElementById('display-email').textContent = newEmail;
-
-            // Close the modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('updateProfileModal'));
-            modal.hide();
-
-            // Show success message
-            openAlertModal('Profile updated successfully!', 'success');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            openAlertModal('Failed to update profile. Please try again later.', 'error');
-        });
-}
-
-// Function to load current profile data
-function loadProfileData() {
-    SecureLogger.info('Loading profile data...');
-
-    // Show loading state
-    document.querySelectorAll('.form-value').forEach(el => {
-        el.textContent = 'Loading...';
-    });
-
-    fetch(window.BASE_URL + 'student/profile/get', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-        }
-    })
-        .then(response => {
-            SecureLogger.info('Response status:', response.status);
-            if (!response.ok) {
-                if (response.status === 401 || response.status === 403) {
-                    // Session expired or unauthorized
-                    window.location.href = window.BASE_URL + 'student/dashboard';
-                    return;
-                }
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            SecureLogger.info('Profile data:', data);
-            if (data.success) {
-                // Update display values
-                document.getElementById('display-userid').textContent = data.user_id || 'N/A';
-                document.getElementById('display-username').textContent = data.username || 'N/A';
-                document.getElementById('display-email').textContent = data.email || 'N/A';
-                document.getElementById('personalEmail').value = data.email || 'N/A';
-
-
-                // Update profile picture if available
-                if (data.profile_picture) {
-                    const imgEl = document.getElementById('profile-img');
-                    if (imgEl) {
-                        const newUrl = resolveImageUrl(data.profile_picture) + '?t=' + Date.now();
-                        imgEl.src = newUrl;
-                        try { localStorage.setItem('student_profile_picture', newUrl); } catch (e) { }
-                    }
-                }
-
-                // Update modal input values
-                document.getElementById('update-username').value = data.username || '';
-                document.getElementById('update-email').value = data.email || '';
-
-            } else {
-                throw new Error(data.message || 'Failed to load profile data');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Show error state in the UI
-            document.querySelectorAll('.form-value').forEach(el => {
-                el.textContent = 'Error loading data';
-            });
-
-            if (error.message === 'User not logged in') {
-                setTimeout(() => {
-                    window.location.href = window.BASE_URL + 'student/dashboard';
-                }, 1500);
-            } else {
-                openAlertModal('Failed to load profile data. Please try again later.', 'error');
-            }
-        });
-}
-
 document.addEventListener('DOMContentLoaded', function () {
     const navbarDrawerToggler = document.getElementById('navbarDrawerToggler');
     const navbarDrawer = document.getElementById('navbarDrawer');
@@ -183,9 +82,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const navbarOverlay = document.getElementById('navbarOverlay');
 
     SecureLogger.info("DOM loaded, setting up profile functionality");
-
-    // Load profile data when page loads
-    loadProfileData();
 
     // Load PDS data when page loads
     loadPDSData();
@@ -625,7 +521,7 @@ function populatePDSForm(pdsData) {
         setValue('locationOfSchool', pdsData.academic.location_of_school);
         setValue('previousCourseGrade', pdsData.academic.previous_course_grade);
         if (pdsData.academic.major_or_strand) {
-            setValue('majorOrStrandSelect', pdsData.academic.major_or_strand);
+            setValue('majorOrStrandInput', pdsData.academic.major_or_strand);
         }
     }
 
@@ -634,6 +530,12 @@ function populatePDSForm(pdsData) {
         setValue('lastName', pdsData.personal.last_name);
         setValue('firstName', pdsData.personal.first_name);
         setValue('middleName', pdsData.personal.middle_name);
+        const fullName = [
+            pdsData.personal.first_name,
+            pdsData.personal.middle_name,
+            pdsData.personal.last_name
+        ].filter(Boolean).join(' ').trim();
+        if (fullName) setAcctPreview('student-display-name', fullName);
         setValue('dateOfBirth', pdsData.personal.date_of_birth);
         setValue('age', pdsData.personal.age);
         setValue('sexSelect', pdsData.personal.sex);
@@ -1037,57 +939,6 @@ function togglePassword(inputId) {
             toggleEl.classList.add('fa-eye');
         }
     }
-}
-
-// Function to change password
-function changePassword() {
-    const currentPassword = document.getElementById('current-password').value;
-    const newPassword = document.getElementById('new-password').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
-
-    // Validate inputs
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        openAlertModal('Please fill in all password fields', 'warning');
-        return;
-    }
-
-    if (newPassword !== confirmPassword) {
-        openAlertModal('New passwords do not match', 'warning');
-        return;
-    }
-
-    if (newPassword.length < 8) {
-        openAlertModal('New password must be at least 8 characters long', 'warning');
-        return;
-    }
-
-    // Create FormData object
-    const formData = new FormData();
-    formData.append('current_password', currentPassword);
-    formData.append('new_password', newPassword);
-    formData.append('confirm_password', confirmPassword);
-
-    // Send request to server
-    fetch(window.BASE_URL + 'update-password', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Success logic
-                openAlertModal('Password updated successfully!', 'success');
-                document.getElementById('changePasswordForm').reset();
-                const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
-                modal.hide();
-            } else {
-                openAlertModal(data.message || 'Failed to update password', 'error');
-            }
-        })
-        .catch(error => {
-            openAlertModal('Failed to update password. Please try again later.', 'error');
-        });
 }
 
 // PWD Proof Display Box Functions

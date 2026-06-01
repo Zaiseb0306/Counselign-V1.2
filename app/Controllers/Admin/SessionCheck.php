@@ -21,7 +21,8 @@ class SessionCheck extends BaseController
             strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false
         );
 
-        if (!session()->get('logged_in')) {
+        $session = session();
+        if (!$session->get('logged_in')) {
             if ($isAjax) {
                 return $this->respond(['loggedin' => false]);
             } else {
@@ -31,17 +32,17 @@ class SessionCheck extends BaseController
 
         // Check for role if specified
         $role = $this->request->getGet('role');
-        if ($role && session()->get('role') !== $role) {
+        if ($role && $session->get('role') !== $role) {
             if ($isAjax) {
                 return $this->respond([
                     'loggedin' => true,
-                    'role' => session()->get('role'),
-                    'redirect' => session()->get('role') === 'admin'
+                    'role' => $session->get('role'),
+                    'redirect' => $session->get('role') === 'admin'
                         ? '/UGCSystem/public/admin/dashboard'
                         : '/UGCSystem/public/user/dashboard'
                 ]);
             } else {
-                if (session()->get('role') === 'admin') {
+                if ($session->get('role') === 'admin') {
                     return redirect()->to('/UGCSystem/public/admin/dashboard');
                 } else {
                     return redirect()->to('/UGCSystem/public/user/dashboard');
@@ -52,8 +53,8 @@ class SessionCheck extends BaseController
         if ($isAjax) {
             return $this->respond([
                 'loggedin' => true,
-                'user_id' => session()->get('user_id'),
-                'role' => session()->get('role')
+                'user_id' => $session->get('user_id'),
+                'role' => $session->get('role')
             ]);
         }
 

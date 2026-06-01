@@ -35,17 +35,39 @@ async function loadNotificationHistory() {
         if (data.status === 'success' && data.notifications && data.notifications.length > 0) {
             console.log('Rendering', data.notifications.length, 'notifications');
             emptyState.classList.add('d-none');
+            updateNotificationStats(data.notifications);
             renderNotifications(data.notifications);
         } else {
             console.log('No notifications to display. Status:', data.status, 'Notifications:', data.notifications);
+            updateNotificationStats([]);
             emptyState.classList.remove('d-none');
         }
     } catch (error) {
         console.error('Error loading notification history:', error);
         loadingIndicator.classList.add('d-none');
         notificationsListContainer.classList.remove('d-none');
+        updateNotificationStats([]);
         emptyState.classList.remove('d-none');
     }
+}
+
+function updateNotificationStats(notifications) {
+    const counts = { total: 0, message: 0, appointment: 0, other: 0 };
+    notifications.forEach((n) => {
+        counts.total += 1;
+        const type = (n.type || '').toLowerCase();
+        if (type === 'message') counts.message += 1;
+        else if (type === 'appointment') counts.appointment += 1;
+        else counts.other += 1;
+    });
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(val);
+    };
+    set('statTotalCount', counts.total);
+    set('statMessageCount', counts.message);
+    set('statAppointmentCount', counts.appointment);
+    set('statOtherCount', counts.other);
 }
 
 function renderNotifications(notifications) {
@@ -54,7 +76,7 @@ function renderNotifications(notifications) {
 
     notifications.forEach(notification => {
         const notificationCard = document.createElement('div');
-        notificationCard.className = 'card mb-3 shadow-sm';
+        notificationCard.className = 'nh-notif-card card mb-3';
         
         // Only show delete button if notification has an ID (from notifications table)
         // Events and announcements from notification_reads have null ID and cannot be deleted

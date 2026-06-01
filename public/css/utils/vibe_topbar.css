@@ -1,0 +1,380 @@
+/**
+ * Unified vibe top bar — student, counselor & admin pages.
+ * Load after sidebar.css on any page with .main-wrapper > header.top-bar
+ */
+:root {
+    --vibe-navy: #060E57;
+    --vibe-navy-soft: #0a1a7a;
+    --vibe-surface: #ffffff;
+    --vibe-muted: #64748b;
+    --vibe-border: rgba(6, 14, 87, 0.1);
+    --vibe-glow: rgba(6, 14, 87, 0.14);
+    --vibe-radius: 14px;
+    --vibe-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --vibe-sidebar-width: 240px;
+    --vibe-sidebar-collapsed: 72px;
+    --vibe-topbar-inset: clamp(0.35rem, 1vw, 1.2rem);
+    --vibe-topbar-top: 0.85rem;
+    --vibe-topbar-height: 4.85rem;
+}
+
+/* Kill legacy sidebar header chrome */
+body[class*="-page-body"] .top-bar .page-title-header,
+body.cam-page-body .top-bar .page-title-header {
+    background: transparent !important;
+    box-shadow: none !important;
+    clip-path: none !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+    color: var(--vibe-navy) !important;
+}
+
+/* Reserve space — fixed bar is out of document flow */
+body[class*="-page-body"] .main-wrapper,
+body.cam-page-body .main-wrapper {
+    padding-top: calc(var(--vibe-topbar-top) + var(--vibe-topbar-height) + 0.4rem) !important;
+}
+
+/* Fixed top bar shell */
+body[class*="-page-body"] .main-wrapper > header.top-bar,
+body.cam-page-body .main-wrapper > header.top-bar,
+.main-wrapper > header.top-bar {
+    position: fixed !important;
+    top: var(--vibe-topbar-top);
+    left: calc(var(--vibe-sidebar-width) + var(--vibe-topbar-inset));
+    right: var(--vibe-topbar-inset);
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    z-index: 1300 !important;
+    transition: left 0.3s ease, box-shadow 0.25s ease;
+    color: var(--vibe-navy);
+}
+
+.sidebar.collapsed ~ .main-wrapper > header.top-bar {
+    left: calc(var(--vibe-sidebar-collapsed) + var(--vibe-topbar-inset));
+}
+
+@media (max-width: 991.98px) {
+    body[class*="-page-body"] .main-wrapper > header.top-bar,
+    body.cam-page-body .main-wrapper > header.top-bar {
+        left: var(--vibe-topbar-inset);
+    }
+}
+
+/* Card appearance */
+body[class*="-page-body"] .top-bar,
+body.cam-page-body .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: var(--vibe-topbar-height);
+    padding: 0.75rem 1.15rem;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--vibe-border);
+    border-radius: var(--vibe-radius);
+    box-shadow:
+        0 1px 2px rgba(6, 14, 87, 0.04),
+        0 8px 28px var(--vibe-glow);
+    overflow: visible !important;
+    isolation: isolate;
+}
+
+body[class*="-page-body"] .top-bar::before,
+body.cam-page-body .top-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--vibe-navy) 0%, #3b82f6 45%, #8b5cf6 100%);
+    border-radius: var(--vibe-radius) var(--vibe-radius) 0 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Title area */
+body[class*="-page-body"] .top-bar-left,
+body.cam-page-body .top-bar-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: 0.65rem;
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+}
+
+body[class*="-page-body"] .top-bar-left > *,
+body.cam-page-body .top-bar-left > * {
+    pointer-events: auto;
+}
+
+body[class*="-page-body"] .page-title-header,
+body.cam-page-body .page-title-header {
+    margin: 0 !important;
+    font-family: var(--vibe-font);
+    font-size: clamp(1.05rem, 2vw, 1.32rem) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.03em;
+    color: var(--vibe-navy) !important;
+    line-height: 1.2;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.55rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+body[class*="-page-body"] .page-title-header i,
+body.cam-page-body .page-title-header i {
+    flex-shrink: 0;
+    color: #fff !important;
+    margin: 0 !important;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(145deg, var(--vibe-navy) 0%, #3b82f6 100%);
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem !important;
+    box-shadow: 0 4px 14px rgba(6, 14, 87, 0.22);
+}
+
+body[class*="-page-body"] .page-title-header .me-2,
+body.cam-page-body .page-title-header .me-2 {
+    margin-right: 0 !important;
+}
+
+/* Actions — never collapse off-screen */
+body[class*="-page-body"] .top-bar-right,
+body.cam-page-body .top-bar-right,
+header.top-bar .top-bar-right {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    position: relative;
+    z-index: 1202;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-width: fit-content;
+}
+
+body[class*="-page-body"] .top-bar-btn,
+body.cam-page-body .top-bar-btn,
+header.top-bar .top-bar-btn {
+    display: inline-flex !important;
+    visibility: visible !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 0.85rem;
+    font-family: var(--vibe-font);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--vibe-navy);
+    background: var(--vibe-surface);
+    border: 1px solid var(--vibe-border);
+    border-radius: 11px;
+    box-shadow: 0 2px 8px rgba(6, 14, 87, 0.08);
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+body[class*="-page-body"] .top-bar-btn i,
+body.cam-page-body .top-bar-btn i,
+header.top-bar .top-bar-btn i {
+    color: var(--vibe-navy) !important;
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: var(--vibe-navy);
+}
+
+/* Font Awesome 6 — include legacy .fa class on top bar */
+header.top-bar .top-bar-btn .fa,
+header.top-bar .top-bar-btn .fas,
+header.top-bar .top-bar-btn .far {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 5 Free" !important;
+    font-weight: 900;
+}
+
+body[class*="-page-body"] .top-bar-btn:hover,
+body.cam-page-body .top-bar-btn:hover {
+    transform: translateY(-2px);
+    background: #f8fafc;
+    box-shadow: 0 10px 22px rgba(6, 14, 87, 0.12);
+    color: var(--vibe-navy);
+}
+
+body[class*="-page-body"] .top-bar-btn:active,
+body.cam-page-body .top-bar-btn:active {
+    transform: translateY(0);
+}
+
+body[class*="-page-body"] .top-bar-btn .btn-label,
+body.cam-page-body .top-bar-btn .btn-label {
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+    body[class*="-page-body"] .top-bar-btn .btn-label,
+    body.cam-page-body .top-bar-btn .btn-label {
+        display: none;
+    }
+
+    body[class*="-page-body"] .top-bar-btn:not(.profile-btn),
+    body.cam-page-body .top-bar-btn:not(.profile-btn) {
+        width: 44px;
+        padding: 0;
+    }
+
+    body[class*="-page-body"] .top-bar-left,
+    body.cam-page-body .top-bar-left {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    body[class*="-page-body"] .page-title-header,
+    body.cam-page-body .page-title-header {
+        white-space: normal !important;
+        line-height: 1.2;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: clamp(0.88rem, 3.5vw, 1.05rem) !important;
+        max-width: 100%;
+    }
+
+    body[class*="-page-body"] .page-title-header i,
+    body.cam-page-body .page-title-header i {
+        width: 34px;
+        height: 34px;
+        font-size: 0.85rem !important;
+        flex-shrink: 0;
+    }
+}
+
+/* Profile — avatar only in bar */
+body[class*="-page-body"] .profile-btn,
+body.cam-page-body .profile-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    overflow: hidden;
+}
+
+body[class*="-page-body"] .profile-btn .btn-label,
+body.cam-page-body .profile-btn .btn-label {
+    display: none !important;
+}
+
+body[class*="-page-body"] .profile-btn .profile-img-small,
+body.cam-page-body .profile-btn .profile-img-small,
+header.top-bar .profile-btn .profile-img-small {
+    width: 44px;
+    height: 44px;
+    display: block !important;
+    visibility: visible !important;
+    object-fit: cover;
+    border: 2px solid rgba(6, 14, 87, 0.1);
+    box-shadow: 0 4px 12px rgba(6, 14, 87, 0.15);
+}
+
+/* Neutralize per-page top-bar margin/position overrides */
+body[class*="-page-body"] header.top-bar,
+body.cam-page-body header.top-bar {
+    margin: 0 !important;
+    overflow: visible !important;
+}
+
+body[class*="-page-body"] .profile-dropdown,
+body.cam-page-body .profile-dropdown {
+    position: relative;
+}
+
+body[class*="-page-body"] .profile-dropdown-menu,
+body.cam-page-body .profile-dropdown-menu {
+    z-index: 1400;
+    border-radius: 12px;
+    border: 1px solid var(--vibe-border);
+    box-shadow: 0 16px 40px rgba(6, 14, 87, 0.18);
+}
+
+/* Message + notification hitboxes */
+body[class*="-page-body"] .message-icon-container,
+body[class*="-page-body"] .notification-icon-container,
+body.cam-page-body .notification-icon-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1203;
+}
+
+body[class*="-page-body"] .message-icon-container .top-bar-btn,
+body[class*="-page-body"] .notification-icon-container .top-bar-btn,
+body.cam-page-body .notification-icon-container .top-bar-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0 !important;
+    position: relative;
+    z-index: 1302;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+body[class*="-page-body"] .message-icon-container .top-bar-btn > i,
+body[class*="-page-body"] .message-icon-container .top-bar-btn > span,
+body[class*="-page-body"] .notification-icon-container .top-bar-btn > i,
+body[class*="-page-body"] .notification-icon-container .top-bar-btn > span,
+body.cam-page-body .notification-icon-container .top-bar-btn > i,
+body.cam-page-body .notification-icon-container .top-bar-btn > span {
+    pointer-events: none;
+}
+
+/* Count badges */
+body[class*="-page-body"] .notification-badge,
+body[class*="-page-body"] .message-badge,
+body.cam-page-body .notification-badge {
+    background: linear-gradient(135deg, #ef4444, #fb7185);
+    color: #fff !important;
+    -webkit-text-fill-color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 3px 6px;
+    min-width: 18px;
+    text-align: center;
+    border-radius: 10px;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    border: 1.5px solid #fff;
+    pointer-events: none;
+}
+
+body[class*="-page-body"] .hidden,
+body.cam-page-body .hidden {
+    display: none !important;
+}

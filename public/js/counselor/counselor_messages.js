@@ -17,6 +17,36 @@ let autoSelectUserId = null;
 // Debug logging
 SecureLogger.info('Counselor Message JS file loaded');
 
+function setMsgStat(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function updateMsgStats(conversations) {
+    const list = conversations || [];
+    const unread = list.reduce((sum, c) => sum + (parseInt(c.unread_count, 10) || 0), 0);
+    let online = 0;
+    let active = 0;
+    list.forEach((c) => {
+        const info = calculateOnlineStatus(c.last_activity, c.last_login, c.logout_time);
+        if (info.status === 'online') online += 1;
+        if (info.status === 'online' || info.status === 'active') active += 1;
+    });
+    setMsgStat('statConversationsCount', list.length);
+    setMsgStat('statUnreadCount', unread);
+    setMsgStat('statOnlineCount', online);
+    setMsgStat('statActiveCount', active);
+}
+
+const MSG_LOADING_HTML = `<div class="loading-state appt-state appt-loading" id="conversationsLoading">
+                            <div class="appt-loader" role="status" aria-label="Loading conversations">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <p>Loading conversations...</p>
+                        </div>`;
+
+
+
 // Small helper to normalize image URLs
 function resolveImageUrl(path) {
     try {
@@ -426,7 +456,7 @@ async function loadConversations() {
         if (!userList) return;
 
         if (!userList.querySelector('.conversation-item')) {
-            userList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Loading conversations...</span></div>';
+            userList.innerHTML = MSG_LOADING_HTML;
         }
 
         const response = await fetch((window.BASE_URL || '/') + 'counselor/message/operations?action=get_conversations', {
@@ -481,14 +511,17 @@ async function loadConversations() {
         console.error('Error:', error);
         const userList = document.querySelector('.conversations-list');
         if (userList && !userList.querySelector('.conversation-item')) {
-            userList.innerHTML = `<div class="error-message">${error.message}</div>`;
+            userList.innerHTML = `<div class="error-message">${error.message}</motion>`;
         }
+        updateMsgStats([]);
     }
 }
 
 function updateConversations(conversations) {
     const userList = document.querySelector('.conversations-list');
     if (!userList) return;
+
+    updateMsgStats(conversations);
 
     if (!Array.isArray(conversations) || conversations.length === 0) {
         if (!userList.querySelector('.no-conversations')) {

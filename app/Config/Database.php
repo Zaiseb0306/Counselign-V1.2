@@ -26,10 +26,10 @@ class Database extends Config
      */
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'localhost',
-        'username'     => 'root',
-        'password'     => '',
-        'database'     => 'counselign',
+        'hostname'     => 'sql303.infinityfree.com',
+        'username'     => 'if0_42058359',
+        'password'     => 'vggOttEZfp',
+        'database'     => 'if0_42058359_counselign',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',
         'pConnect'     => false,  // Disable persistent connections for better transaction control

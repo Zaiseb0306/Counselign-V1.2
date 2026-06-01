@@ -1,0 +1,307 @@
+/**
+ * Shared notifications dropdown — student & counselor pages.
+ * Load on any *-page-body or .cam-page-body view with the notifications partial.
+ */
+:root {
+  --snd-navy: #060E57;
+  --snd-border: rgba(6, 14, 87, 0.10);
+  --snd-shadow: 0 14px 40px rgba(6, 14, 87, 0.18);
+}
+
+/* Base panel — JS sets top/right when opened */
+.student-notifications-dropdown,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown,
+body.cam-page-body #notificationsDropdown.student-notifications-dropdown {
+  position: fixed !important;
+  right: 18px;
+  top: 84px;
+  width: min(360px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: min(70vh, 520px) !important;
+  background: #fff !important;
+  border: 1px solid var(--snd-border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--snd-shadow) !important;
+  z-index: 2100 !important;
+  overflow: hidden !important;
+  pointer-events: auto;
+}
+
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown[style*="display: none"],
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown[style*="display:none"],
+body.cam-page-body #notificationsDropdown.student-notifications-dropdown[style*="display: none"],
+body.cam-page-body #notificationsDropdown.student-notifications-dropdown[style*="display:none"] {
+  pointer-events: none !important;
+}
+
+.student-notifications-dropdown .snd-head,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .snd-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+  padding: 12px 12px !important;
+  border-bottom: 1px solid rgba(2, 6, 23, 0.08) !important;
+  background: linear-gradient(180deg, rgba(6, 14, 87, 0.04), transparent) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.student-notifications-dropdown .snd-title,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown h3.snd-title,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown h3 {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: var(--snd-navy) !important;
+  letter-spacing: -0.02em;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  width: auto !important;
+  max-width: 50% !important;
+}
+
+.student-notifications-dropdown .snd-actions,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .snd-actions {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-end !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  margin-left: 0 !important;
+  width: auto !important;
+}
+
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown #markAllReadBtn,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown #seeHistoryBtn {
+  margin-left: 0 !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+.student-notifications-dropdown .snd-list,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .notifications-list {
+  padding: 10px 10px 12px !important;
+  overflow: auto !important;
+  max-height: min(58vh, 480px) !important;
+}
+
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .notification-item {
+  border-bottom: none !important;
+  padding: 10px !important;
+}
+
+.student-notifications-dropdown .notification-item,
+body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .notification-item {
+  background: #fff;
+  border: 1px solid rgba(6,14,87,.10);
+  border-radius: 12px;
+  padding: 10px 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+
+.student-notifications-dropdown .notification-item:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(6,14,87,.12);
+  background: #f8fafc;
+}
+
+.student-notifications-dropdown .notification-item.unread{
+  border-color: rgba(59,130,246,.35);
+  background: linear-gradient(180deg, rgba(59,130,246,.08), transparent);
+}
+
+.student-notifications-dropdown .notification-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.student-notifications-dropdown .notification-header h4{
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.student-notifications-dropdown .notification-actions{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.student-notifications-dropdown .notification-time{
+  font-size: 11px;
+  color: rgba(2,6,23,.55);
+  white-space: nowrap;
+}
+
+.student-notifications-dropdown .notification-item p{
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: rgba(2,6,23,.72);
+  line-height: 1.35;
+}
+
+.student-notifications-dropdown .empty-notifications{
+  padding: 18px 10px;
+  text-align:center;
+  color: rgba(2,6,23,.55);
+  font-size: 13px;
+}
+
+/*
+ * Header count badges — shared by all student pages that load this file.
+ * (Student dashboard also defines these in student_dashboard.css; styles match.)
+ * Without these rules, the count inherits .top-bar-btn text color (navy) and looks like plain text.
+ */
+.notification-badge {
+  background: linear-gradient(to bottom right, #ef4444, #fb7185);
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 3px 6px;
+  min-width: 18px;
+  text-align: center;
+  border-radius: 10px;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+  border: 1.5px solid #fff;
+}
+
+.message-badge {
+  background: linear-gradient(to bottom right, #ef4444, #fb7185);
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 3px 6px;
+  min-width: 18px;
+  text-align: center;
+  border-radius: 10px;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+  border: 1.5px solid #fff;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ===== Icon button hitboxes (Messages + Notifications) ===== */
+.message-icon-container,
+.notification-icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-icon-container .top-bar-btn,
+.notification-icon-container .top-bar-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Ensure the button receives the click (not the icon/badge) */
+.message-icon-container .top-bar-btn > i,
+.notification-icon-container .top-bar-btn > i,
+.message-icon-container .top-bar-btn > span,
+.notification-icon-container .top-bar-btn > span {
+  pointer-events: none;
+}
+
+/* Mobile backdrop (tap outside to close) */
+.snd-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 2099;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.snd-overlay.is-active {
+  display: block;
+}
+
+/* ===== Mobile: centered panel below top bar (all student pages) ===== */
+@media (max-width: 768px) {
+  .student-notifications-dropdown,
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown,
+  body.cam-page-body #notificationsDropdown.student-notifications-dropdown {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 20px) !important;
+    max-width: 500px !important;
+    max-height: min(75vh, 560px) !important;
+  }
+
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .snd-title,
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown h3 {
+    max-width: none !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .snd-actions .btn {
+    min-width: 40px;
+    padding: 0.35rem 0.5rem !important;
+  }
+
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .snd-actions .d-none.d-sm-inline {
+    display: none !important;
+  }
+
+  .student-notifications-dropdown .notification-header,
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .notification-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .student-notifications-dropdown .notification-actions,
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .notification-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .student-notifications-dropdown .notification-time,
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .notification-time {
+    white-space: normal;
+  }
+
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown .notifications-list {
+    max-height: min(62vh, 440px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-notifications-dropdown,
+  body[class*="-page-body"] #notificationsDropdown.student-notifications-dropdown,
+  body.cam-page-body #notificationsDropdown.student-notifications-dropdown {
+    width: calc(100vw - 16px) !important;
+    border-radius: 12px !important;
+  }
+}

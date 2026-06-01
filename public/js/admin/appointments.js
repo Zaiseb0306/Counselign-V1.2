@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap components
     const appointmentDetailsModal = new bootstrap.Modal(document.getElementById('appointmentDetailsModal'));
+    const manageAppointmentOptionsModalEl = document.getElementById('manageAppointmentOptionsModal');
+    const manageAppointmentOptionsModal = manageAppointmentOptionsModalEl
+        ? new bootstrap.Modal(manageAppointmentOptionsModalEl)
+        : null;
     
     // Get DOM elements
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -8,6 +12,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const appointmentsList = document.getElementById('appointmentsList');
     const statusFilter = document.getElementById('statusFilter');
     const dateRangeFilter = document.getElementById('dateRangeFilter');
+    const manageAppointmentOptionsBtn = document.getElementById('manageAppointmentOptionsBtn');
+    const saveAppointmentOptionsBtn = document.getElementById('saveAppointmentOptionsBtn');
+    const methodTypeOptionsInput = document.getElementById('methodTypeOptionsInput');
+    const purposeOptionsInput = document.getElementById('purposeOptionsInput');
+    const optionsSaveFeedback = document.getElementById('optionsSaveFeedback');
+    const successModalEl = document.getElementById('successModal');
+    const successModalTitle = document.getElementById('successModalTitle');
+    const successModalBody = document.getElementById('successModalBody');
     
     // Status count elements
     const pendingCountEl = document.getElementById('pendingCount');
@@ -266,38 +278,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create an appointment card element
     function createAppointmentCard(appointment) {
         const card = document.createElement('div');
-        card.className = 'appointment-card';
+        const status = appointment.status || 'pending';
+        card.className = `appointment-card ${status} status-${status}`;
         card.dataset.id = appointment.id;
-        
-        // Add status badge class
-        card.classList.add(`status-${appointment.status}`);
-        
-        // Determine which timestamp to display based on status
-        const timeLabel = appointment.status === 'pending' ? 'Received: ' : 'Updated: ';
-        const timestamp = appointment.status === 'pending' ? 
-            appointment.created_at : 
-            (appointment.updated_at || appointment.created_at);
-        
-        // Create card content
+
+        const timeLabel = status === 'pending' ? 'Received: ' : 'Updated: ';
+        const timestamp = status === 'pending'
+            ? appointment.created_at
+            : (appointment.updated_at || appointment.created_at);
+        const statusLabel = status === 'feedback_pending' ? 'InProgress' : capitalizeFirstLetter(status);
+        const displayId = appointment.student_id || appointment.id;
+
         card.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <p class="student-id mb-0">Student ID: ${appointment.student_id}</p>
-                <span class="badge ${getStatusBadgeClass(appointment.status)}">${capitalizeFirstLetter(appointment.status)}</span>
+            <div class="appt-card-top">
+                <span class="appt-card-id"><i class="fas fa-user-graduate"></i> ${displayId}</span>
+                <span class="badge ${getStatusBadgeClass(status)}">${statusLabel}</span>
             </div>
-            <p class="date-time mb-1">Appointment Date: ${formatDate(appointment.appointed_date)}</p>
-            <p class="date-time mb-0">Time: ${appointment.appointed_time}</p>
-            <p class="timestamp text-muted mt-2 mb-0" style="font-size: 0.8rem;">${timeLabel}${formatDateTime(timestamp)}</p>
-            <hr class="my-2">
-            <button class="btn btn-sm btn-outline-primary view-details-btn w-100" data-id="${appointment.id}">
-                View Details
+            <div class="appt-card-schedule">
+                <div class="appt-card-date"><i class="fas fa-calendar"></i> ${formatDate(appointment.appointed_date)}</div>
+                <div class="appt-card-time"><i class="fas fa-clock"></i> ${appointment.appointed_time || '—'}</div>
+            </div>
+            <p class="timestamp appt-card-meta">${timeLabel}${formatDateTime(timestamp)}</p>
+            <button type="button" class="btn view-details-btn w-100" data-id="${appointment.id}">
+                <i class="fas fa-arrow-right me-1"></i> View Details
             </button>
         `;
-        
-        // Add event listener to view details button
-        card.querySelector('.view-details-btn').addEventListener('click', function() {
+
+        card.querySelector('.view-details-btn').addEventListener('click', function (e) {
+            e.stopPropagation();
             openAppointmentDetails(appointment);
         });
-        
+
+        const index = appointmentsList?.children?.length || 0;
+        card.style.animationDelay = `${Math.min(index, 8) * 0.04}s`;
+
         return card;
     }
     
@@ -368,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const modalStatus = modal.querySelector('#modalStatus');
         if (modalStatus) {
-            modalStatus.textContent = capitalizeFirstLetter(appointment.status);
+            modalStatus.textContent = appointment.status === 'feedback_pending' ? 'InProgress' : capitalizeFirstLetter(appointment.status);
             modalStatus.className = `badge ${getStatusBadgeClass(appointment.status)}`;
         }
         
@@ -432,32 +446,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Left column (Reschedule button)
                 const leftCol = document.createElement('div');
-                leftCol.className = 'col-3 text-end pe-2';
+                leftCol.className = 'col-12 col-md-3 mb-2 mb-md-0 text-md-end pe-md-2';
                 const rescheduleButton = document.createElement('button');
                 rescheduleButton.type = 'button';
                 rescheduleButton.hidden = true;
-                rescheduleButton.className = 'btn btn-warning';
+                rescheduleButton.className = 'btn btn-warning w-100';
                 rescheduleButton.id = 'rescheduleAppointmentBtn';
                 rescheduleButton.innerHTML = '<i class="fas fa-calendar-alt me-1"></i> Re-schedule';
                 leftCol.appendChild(rescheduleButton);
                 
                 // Center column (Close button)
                 const centerCol = document.createElement('div');
-                centerCol.className = 'col-2 text-center px-0';
+                centerCol.className = 'col-12 col-md-2 mb-2 mb-md-0 text-center px-md-0';
                 const closeButton = document.createElement('button');
                 closeButton.type = 'button';
-                closeButton.className = 'btn btn-secondary';
+                closeButton.className = 'btn btn-secondary w-100';
                 closeButton.setAttribute('data-bs-dismiss', 'modal');
                 closeButton.textContent = 'Close';
                 centerCol.appendChild(closeButton);
                 
                 // Right column (Approve button)
                 const rightCol = document.createElement('div');
-                rightCol.className = 'col-3 text-start ps-2';
+                rightCol.className = 'col-12 col-md-3 text-md-start ps-md-2';
                 const approveButton = document.createElement('button');
                 approveButton.type = 'button';
                 approveButton.hidden = true;
-                approveButton.className = 'btn btn-primary';
+                approveButton.className = 'btn btn-primary w-100';
                 approveButton.id = 'approveAppointmentBtn';
                 approveButton.innerHTML = '<i class="fas fa-check me-1"></i> Approve';
                 rightCol.appendChild(approveButton);
@@ -785,6 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
             document.body.appendChild(toastContainer);
         }
+        toastContainer.style.zIndex = '2000';
         
         // Create toast element
         const toastEl = document.createElement('div');
@@ -840,9 +855,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function getStatusBadgeClass(status) {
-        switch(status) {
+        switch (status) {
             case 'pending':
-                return 'bg-warning text-dark';
+                return 'badge-pending';
             case 'approved':
                 return 'bg-success';
             case 'rejected':
@@ -852,7 +867,9 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'cancelled':
                 return 'bg-secondary';
             case 'rescheduled':
-                return 'bg-warning text-dark';
+                return 'badge-rescheduled';
+            case 'feedback_pending':
+                return 'bg-secondary';
             default:
                 return 'bg-secondary';
         }
@@ -1168,4 +1185,149 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial load
     loadAppointments();
+
+    function parseOptionsTextarea(value) {
+        return value
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .filter((line, index, arr) => arr.indexOf(line) === index);
+    }
+
+    function showOptionsSavedSuccess() {
+        if (!successModalEl || !successModalTitle || !successModalBody) {
+            showToast('Successfully Applied', 'success');
+            return;
+        }
+
+        const modalHeader = successModalEl.querySelector('.modal-header');
+        const closeBtn = successModalEl.querySelector('.btn-close');
+        const okBtn = successModalEl.querySelector('.modal-footer .btn');
+
+        if (modalHeader) modalHeader.className = 'modal-header system-success-modal-header';
+        if (closeBtn) closeBtn.className = 'btn-close btn-close-white';
+        if (okBtn) okBtn.className = 'btn system-success-modal-btn';
+
+        successModalTitle.textContent = 'Successfully Applied';
+        successModalBody.innerHTML = '<p class="mb-0">Your appointment dropdown options were saved.</p>';
+
+        new bootstrap.Modal(successModalEl).show();
+    }
+
+    async function loadAppointmentOptionsForAdmin() {
+        try {
+            if (optionsSaveFeedback) {
+                optionsSaveFeedback.classList.add('d-none');
+            }
+
+            const response = await fetch((window.BASE_URL || '/') + 'admin/appointments/options', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load appointment options');
+            }
+
+            const data = await response.json();
+            if (data.status !== 'success' || !data.data) {
+                throw new Error(data.message || 'Invalid options response');
+            }
+
+            const methodValues = Array.isArray(data.data.method_type)
+                ? data.data.method_type.map(item => item.value)
+                : [];
+            const purposeValues = Array.isArray(data.data.purpose)
+                ? data.data.purpose.map(item => item.value)
+                : [];
+
+            if (methodTypeOptionsInput) {
+                methodTypeOptionsInput.value = methodValues.join('\n');
+            }
+            if (purposeOptionsInput) {
+                purposeOptionsInput.value = purposeValues.join('\n');
+            }
+        } catch (error) {
+            showToast(error.message || 'Error loading appointment options', 'error');
+        }
+    }
+
+    async function saveAppointmentOptions() {
+        const methodType = parseOptionsTextarea(methodTypeOptionsInput ? methodTypeOptionsInput.value : '');
+        const purpose = parseOptionsTextarea(purposeOptionsInput ? purposeOptionsInput.value : '');
+
+        if (!methodType.length || !purpose.length) {
+            showToast('Method Type and Purpose options must not be empty', 'error');
+            return;
+        }
+
+        if (saveAppointmentOptionsBtn) {
+            saveAppointmentOptionsBtn.disabled = true;
+            saveAppointmentOptionsBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Saving...';
+        }
+
+        try {
+            const response = await fetch((window.BASE_URL || '/') + 'admin/appointments/options/save', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ method_type: methodType, purpose })
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.status !== 'success') {
+                throw new Error(data.message || 'Failed to save options');
+            }
+
+            if (optionsSaveFeedback) {
+                optionsSaveFeedback.classList.add('d-none');
+            }
+
+            let successMessageShown = false;
+            const showSavedMessage = () => {
+                if (successMessageShown) return;
+                successMessageShown = true;
+                showOptionsSavedSuccess();
+            };
+
+            if (manageAppointmentOptionsModalEl) {
+                manageAppointmentOptionsModalEl.addEventListener('hidden.bs.modal', showSavedMessage, { once: true });
+            }
+
+            if (manageAppointmentOptionsModal) {
+                manageAppointmentOptionsModal.hide();
+                // Fallback: ensure success is still shown even if hide event is missed.
+                setTimeout(showSavedMessage, 400);
+            } else {
+                showSavedMessage();
+            }
+        } catch (error) {
+            showToast(error.message || 'Failed to save appointment options', 'error');
+        } finally {
+            if (saveAppointmentOptionsBtn) {
+                saveAppointmentOptionsBtn.disabled = false;
+                saveAppointmentOptionsBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Options';
+            }
+        }
+    }
+
+    if (manageAppointmentOptionsBtn) {
+        manageAppointmentOptionsBtn.addEventListener('click', async function() {
+            await loadAppointmentOptionsForAdmin();
+            if (manageAppointmentOptionsModal) {
+                manageAppointmentOptionsModal.show();
+            }
+        });
+    }
+
+    if (saveAppointmentOptionsBtn) {
+        saveAppointmentOptionsBtn.addEventListener('click', saveAppointmentOptions);
+    }
 }); 

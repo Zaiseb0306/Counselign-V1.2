@@ -73,11 +73,20 @@ class HistoryReports extends Controller
                 $query = $this->db->query("
                     SELECT
                         DATE(preferred_date) as date,
-                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                        SUM(CASE
+                            WHEN status = 'completed'
+                                 AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) IN ('feedback_submitted', 'submitted')
+                            THEN 1 ELSE 0
+                        END) as completed,
                         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
                         SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as feedback_pending,
+                        SUM(CASE
+                            WHEN status = 'feedback_pending'
+                                 OR (status = 'completed'
+                                     AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) NOT IN ('feedback_submitted', 'submitted'))
+                            THEN 1 ELSE 0
+                        END) as feedback_pending,
                         SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled
                     FROM appointments
                     WHERE preferred_date BETWEEN ? AND ?
@@ -153,11 +162,18 @@ class HistoryReports extends Controller
                     SELECT
                         w.week_start,
                         w.week_end,
-                        COUNT(DISTINCT CASE WHEN a.status = 'completed' THEN a.id END) as completed,
+                        COUNT(DISTINCT CASE
+                            WHEN a.status = 'completed'
+                                 AND LOWER(REPLACE(COALESCE(a.student_feedback_status, ''), ' ', '_')) IN ('feedback_submitted', 'submitted')
+                            THEN a.id END) as completed,
                         COUNT(DISTINCT CASE WHEN a.status = 'approved' THEN a.id END) as approved,
                         COUNT(DISTINCT CASE WHEN a.status = 'rejected' THEN a.id END) as rejected,
                         COUNT(DISTINCT CASE WHEN a.status = 'pending' THEN a.id END) as pending,
-                        COUNT(DISTINCT CASE WHEN a.status = 'feedback_pending' THEN a.id END) as feedback_pending,
+                        COUNT(DISTINCT CASE
+                            WHEN a.status = 'feedback_pending'
+                                 OR (a.status = 'completed'
+                                     AND LOWER(REPLACE(COALESCE(a.student_feedback_status, ''), ' ', '_')) NOT IN ('feedback_submitted', 'submitted'))
+                            THEN a.id END) as feedback_pending,
                         COUNT(DISTINCT CASE WHEN a.status = 'rescheduled' THEN a.id END) as rescheduled
                     FROM weeks w
                     LEFT JOIN appointments a ON a.preferred_date BETWEEN w.week_start AND w.week_end
@@ -207,11 +223,20 @@ class HistoryReports extends Controller
                 $query = $this->db->query("
                     SELECT
                         YEAR(preferred_date) as year,
-                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                        SUM(CASE
+                            WHEN status = 'completed'
+                                 AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) IN ('feedback_submitted', 'submitted')
+                            THEN 1 ELSE 0
+                        END) as completed,
                         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
                         SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
                         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as feedback_pending,
+                        SUM(CASE
+                            WHEN status = 'feedback_pending'
+                                 OR (status = 'completed'
+                                     AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) NOT IN ('feedback_submitted', 'submitted'))
+                            THEN 1 ELSE 0
+                        END) as feedback_pending,
                         SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as rescheduled
                     FROM appointments
                     WHERE YEAR(preferred_date) = ?
@@ -274,11 +299,20 @@ class HistoryReports extends Controller
                 $selectedYear = (int)date('Y', strtotime($month . '-01'));
                 $totalQuery = $this->db->query("
                     SELECT
-                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as total_completed,
+                        SUM(CASE
+                            WHEN status = 'completed'
+                                 AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) IN ('feedback_submitted', 'submitted')
+                            THEN 1 ELSE 0
+                        END) as total_completed,
                         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as total_approved,
                         SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as total_rejected,
                         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as total_feedback_pending,
+                        SUM(CASE
+                            WHEN status = 'feedback_pending'
+                                 OR (status = 'completed'
+                                     AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) NOT IN ('feedback_submitted', 'submitted'))
+                            THEN 1 ELSE 0
+                        END) as total_feedback_pending,
                         SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as total_rescheduled
                     FROM appointments
                     WHERE YEAR(preferred_date) = ?
@@ -299,11 +333,20 @@ class HistoryReports extends Controller
                 // For daily, weekly, and monthly reports, use the date range
                 $totalQuery = $this->db->query("
                     SELECT
-                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as total_completed,
+                        SUM(CASE
+                            WHEN status = 'completed'
+                                 AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) IN ('feedback_submitted', 'submitted')
+                            THEN 1 ELSE 0
+                        END) as total_completed,
                         SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as total_approved,
                         SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as total_rejected,
                         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as total_pending,
-                        SUM(CASE WHEN status = 'feedback_pending' THEN 1 ELSE 0 END) as total_feedback_pending,
+                        SUM(CASE
+                            WHEN status = 'feedback_pending'
+                                 OR (status = 'completed'
+                                     AND LOWER(REPLACE(COALESCE(student_feedback_status, ''), ' ', '_')) NOT IN ('feedback_submitted', 'submitted'))
+                            THEN 1 ELSE 0
+                        END) as total_feedback_pending,
                         SUM(CASE WHEN status = 'rescheduled' THEN 1 ELSE 0 END) as total_rescheduled
                     FROM appointments
                     WHERE preferred_date BETWEEN ? AND ?

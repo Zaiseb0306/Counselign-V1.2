@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
     checkAppointmentEligibility().then(() => {
         // Only proceed with other initializations if no pending appointment
         setMinimumAppointmentDate();
+        loadAppointmentOptions();
         initializeCustomCalendarPicker();
         loadCounselors();
         setupFormSubmission();
@@ -53,6 +54,55 @@ document.addEventListener('DOMContentLoaded', function () {
         setupAcknowledgmentValidation();
     });
 });
+
+function loadAppointmentOptions() {
+    const methodSelect = document.getElementById('methodType');
+    const purposeSelect = document.getElementById('purpose');
+    if (!methodSelect || !purposeSelect) return;
+
+    fetch((window.BASE_URL || '/') + 'student/appointment/options', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load appointment options');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status !== 'success' || !data.data) {
+                throw new Error(data.message || 'Invalid options response');
+            }
+
+            const methodOptions = Array.isArray(data.data.method_type) ? data.data.method_type : [];
+            const purposeOptions = Array.isArray(data.data.purpose) ? data.data.purpose : [];
+
+            methodSelect.innerHTML = '<option value="">Select a method type</option>';
+            purposeSelect.innerHTML = '<option value="">Select the purpose of your consultation</option>';
+
+            methodOptions.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                methodSelect.appendChild(option);
+            });
+
+            purposeOptions.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                purposeSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading appointment options:', error);
+        });
+}
 
 // Initialize custom calendar picker
 function initializeCustomCalendarPicker() {

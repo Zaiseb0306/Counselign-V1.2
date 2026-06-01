@@ -48,8 +48,39 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeFollowUpCalendarPickers();
 });
 
+function setFuStat(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function updateFollowUpStats(appointments) {
+  const list = appointments || [];
+  setFuStat("statCompletedCount", list.length);
+  setFuStat(
+    "statWithFollowUpCount",
+    list.filter((a) => (parseInt(a.follow_up_count, 10) || 0) > 0).length
+  );
+  setFuStat(
+    "statPendingCount",
+    list.filter((a) => (parseInt(a.pending_follow_up_count, 10) || 0) > 0)
+      .length
+  );
+  setFuStat(
+    "statTotalFollowUpCount",
+    list.reduce((sum, a) => sum + (parseInt(a.follow_up_count, 10) || 0), 0)
+  );
+}
+
+function showFuLoading(show) {
+  const loader = document.getElementById("fuLoading");
+  const container = document.getElementById("completedAppointmentsContainer");
+  if (loader) loader.style.display = show ? "block" : "none";
+  if (show && container) container.style.display = "none";
+}
+
 // Load completed appointments for the logged-in counselor
 async function loadCompletedAppointments(searchTerm = "") {
+  showFuLoading(true);
   try {
     let url =
       (window.BASE_URL || "/") + "counselor/follow-up/completed-appointments";
@@ -73,11 +104,14 @@ async function loadCompletedAppointments(searchTerm = "") {
     const data = await response.json();
 
     if (data.status === "success") {
+      showFuLoading(false);
       displayCompletedAppointments(data.appointments, data.search_term);
     } else {
+      showFuLoading(false);
       showError(data.message || "Failed to load completed appointments");
     }
   } catch (error) {
+    showFuLoading(false);
     console.error("Error loading completed appointments:", error);
     showError("Error loading completed appointments: " + error.message);
   }
@@ -90,6 +124,8 @@ function displayCompletedAppointments(appointments, searchTerm = "") {
   const noSearchResults = document.getElementById("noSearchResults");
 
   if (!container) return;
+
+  updateFollowUpStats(appointments);
 
   if (appointments.length === 0) {
     container.style.display = "none";
@@ -110,9 +146,9 @@ function displayCompletedAppointments(appointments, searchTerm = "") {
   container.innerHTML = appointments
     .map(
       (appointment) => `
-        <div class="appointment-card">
+        <div class="appointment-card fu-appointment-card status-completed">
             <div class="appointment-header">
-                <div class="appointment-status">${appointment.status}</div>
+                <div class="appointment-status status-completed">${appointment.status}</div>
                 <div class="header-indicators">
                     <div class="follow-up-count">
                         <i class="fas fa-calendar-plus"></i>
@@ -140,43 +176,23 @@ function displayCompletedAppointments(appointments, searchTerm = "") {
             </div>
             <div class="appointment-details">
                 <div class="appointment-date">
-                    <i class="fas fa-calendar"></i>
+                  <i class="fas fa-calendar"></i>
                     <span>${formatDate(appointment.preferred_date)}</span>
                 </div>
                 <div class="appointment-time">
-                    <i class="fas fa-clock"></i>
+                  <i class="fas fa-clock"></i>
                     <span>${appointment.preferred_time}</span>
                 </div>
                 <div class="appointment-type">
-                    <i class="fas fa-comments"></i>
+                  <i class="fas fa-comments"></i>
                     <span>${appointment.method_type}</span>
                 </div>
                 ${
                   appointment.purpose
                     ? `
                 <div class="appointment-purpose">
-                    <i class="fas fa-bullseye"></i>
+                  <i class="fas fa-bullseye"></i>
                     <span>${appointment.purpose}</span>
-                </div>
-                `
-                    : ""
-                }
-                ${
-                  appointment.reason
-                    ? `
-                <div class="appointment-reason">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>${appointment.reason}</span>
-                </div>
-                `
-                    : ""
-                }
-                ${
-                  appointment.description
-                    ? `
-                <div class="appointment-description">
-                    <i class="fas fa-file-text"></i>
-                    <span>${appointment.description}</span>
                 </div>
                 `
                     : ""

@@ -1,0 +1,122 @@
+/**
+ * Shared vibe-coding content shell for counselor pages (*-page-body).
+ * Header: css/utils/vibe_topbar.css
+ */
+:root {
+    --appt-navy: #060E57;
+    --appt-navy-soft: #0a1a7a;
+    --appt-surface: #ffffff;
+    --appt-muted: #64748b;
+    --appt-border: rgba(6, 14, 87, 0.08);
+    --appt-glow: rgba(6, 14, 87, 0.12);
+    --appt-radius: 14px;
+    --appt-radius-sm: 10px;
+    --appt-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --appt-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Mesh background — all counselor page body classes */
+body.dash-page-body,
+body.hr-page-body,
+body.ann-page-body,
+body.vf-page-body,
+body.msg-page-body,
+body.fu-page-body,
+body.pf-page-body,
+body.prof-page-body,
+body.nh-page-body,
+body.csq-page-body,
+body.va-page-body,
+body.cam-page-body {
+    background-color: #eef1f8 !important;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(6, 14, 87, 0.07), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 110, 253, 0.06), transparent),
+        linear-gradient(180deg, #f4f6fc 0%, #eef1f8 100%) !important;
+    font-family: var(--appt-font) !important;
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+}
+
+body[class*="-page-body"] main,
+body.cam-page-body main {
+    background: transparent !important;
+}
+
+/* Top bar: see public/css/utils/vibe_topbar.css (shared with student pages) */
+
+/* Counselor dashboard: vibe-style notifications panel (existing #notificationsDropdown) */
+body.dash-page-body #notificationsDropdown.student-notifications-dropdown {
+    position: fixed !important;
+    width: min(360px, calc(100vw - 24px));
+    max-height: min(70vh, 520px);
+    background: #fff;
+    border: 1px solid var(--appt-border);
+    border-radius: 14px;
+    box-shadow: 0 14px 40px rgba(6, 14, 87, 0.18);
+    z-index: 2100;
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+body.dash-page-body #notificationsDropdown.student-notifications-dropdown[style*="display: none"],
+body.dash-page-body #notificationsDropdown.student-notifications-dropdown[style*="display:none"] {
+    pointer-events: none !important;
+}
+
+body.dash-page-body #notificationsDropdown.active,
+body.dash-page-body #notificationsDropdown[style*="block"] {
+    display: block !important;
+}
+
+body.dash-page-body #notificationsDropdown > .p-3.border-b,
+body.dash-page-body #notificationsDropdown > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 12px !important;
+    border-bottom: 1px solid rgba(2, 6, 23, 0.08) !important;
+    background: linear-gradient(180deg, rgba(6, 14, 87, 0.04), transparent);
+}
+
+body.dash-page-body #notificationsDropdown h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--appt-navy) !important;
+}
+
+body.dash-page-body #notificationsDropdown .notifications-list {
+    padding: 10px;
+    max-height: min(58vh, 480px) !important;
+}
+
+body.dash-page-body #notificationsDropdown .notification-item {
+    background: #fff;
+    border: 1px solid rgba(6, 14, 87, 0.1);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+body.dash-page-body #notificationsDropdown .notification-item.unread {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.08), transparent);
+}
+
+/* Content panels — light vibe cards */
+body[class*="-page-body"] .content-panel,
+body[class*="-page-body"] .dash-panel,
+body[class*="-page-body"] .appointment-container,
+body[class*="-page-body"] .follow-up-container,
+body[class*="-page-body"] .announcements-container,
+body[class*="-page-body"] .feedback-container,
+body[class*="-page-body"] .messages-layout,
+body.cam-page-body .appointment-management-container {
+    border: 1px solid var(--appt-border) !important;
+    border-radius: var(--appt-radius) !important;
+    box-shadow: 0 4px 24px var(--appt-glow) !important;
+}

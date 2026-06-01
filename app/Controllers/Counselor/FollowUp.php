@@ -9,11 +9,22 @@ use App\Models\AppointmentModel;
 use App\Models\FollowUpAppointmentModel;
 use App\Models\CounselorAvailabilityModel;
 use App\Models\NotificationsModel;
+use App\Services\AppointmentService;
+use App\Services\FollowUpAppointmentService;
 use CodeIgniter\API\ResponseTrait;
 
 class FollowUp extends BaseController
 {
     use ResponseTrait;
+
+    protected AppointmentService $appointmentService;
+    protected FollowUpAppointmentService $followUpAppointmentService;
+
+    public function __construct()
+    {
+        $this->appointmentService = new AppointmentService();
+        $this->followUpAppointmentService = new FollowUpAppointmentService();
+    }
 
     public function index()
     {
@@ -439,13 +450,10 @@ public function createFollowUp()
             return $this->fail('Time slot conflicts with another follow-up session or appointment');
         }
 
-        // Get next sequence number for this parent appointment
-        $nextSequence = $followUpModel->getNextSequence($parentAppointmentId);
-
         // Set Manila timezone for database operations
         $originalTimezone = $this->setManilaTimezone();
         
-        // Prepare data for insertion
+        // Prepare data for insertion (follow_up_sequence will be calculated by service)
         $followUpData = [
             'counselor_id' => $counselorId,
             'student_id' => $studentId,
@@ -453,7 +461,6 @@ public function createFollowUp()
             'preferred_date' => $preferredDate,
             'preferred_time' => $preferredTime,
             'consultation_type' => $consultationType,
-            'follow_up_sequence' => $nextSequence,
             'description' => $description ?? '',
             'reason' => $reason ?? '',
             'status' => 'pending'
@@ -461,9 +468,11 @@ public function createFollowUp()
 
         log_message('debug', 'FollowUp::createFollowUp - Attempting to insert: ' . json_encode($followUpData));
 
-        // Insert the follow-up appointment
-        if ($followUpModel->insert($followUpData)) {
-            $insertId = $followUpModel->getInsertID();
+        try {
+            // Use FollowUpAppointmentService instead of direct model insert
+            // This handles automatic follow_up_sequence calculation (maintain_followup_sequence trigger)
+            $insertId = $this->followUpAppointmentService->createFollowUpAppointment($followUpData);
+            
             log_message('info', 'FollowUp::createFollowUp - Successfully created follow-up appointment with ID: ' . $insertId);
             
             // Get the created follow-up data for email notification
@@ -491,14 +500,13 @@ public function createFollowUp()
                 'message' => 'Follow-up appointment created successfully',
                 'follow_up_id' => $insertId
             ]);
-        } else {
-            $errors = $followUpModel->errors();
-            log_message('error', 'FollowUp::createFollowUp - Model validation failed: ' . json_encode($errors));
+        } catch (\Exception $e) {
+            log_message('error', 'FollowUp::createFollowUp - Exception: ' . $e->getMessage());
             
-            // Restore original timezone
+            // Restore original timezone in case of exception
             $this->restoreTimezone($originalTimezone);
             
-            return $this->fail('Validation failed: ' . implode(', ', $errors));
+            return $this->fail('Failed to create follow-up appointment: ' . $e->getMessage());
         }
 
     } catch (\Exception $e) {

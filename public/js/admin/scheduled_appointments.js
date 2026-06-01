@@ -613,7 +613,7 @@ document.addEventListener("DOMContentLoaded", function () {
           );
         } else {
           if (data.message && data.message.includes("session")) {
-            window.location.href = "../index.php";
+            window.location.href = "../";
           } else {
             showToast(
               "Error",

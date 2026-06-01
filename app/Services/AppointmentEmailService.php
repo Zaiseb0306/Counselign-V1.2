@@ -694,7 +694,7 @@ class AppointmentEmailService
 
     /**
      * Send feedback reminder notification to student
-     * 
+     *
      * @param string $studentId The student ID
      * @param array $data The data including student_name, counselor_name, appointment_date, appointment_time, feedback_link
      * @return bool True if email sent successfully, false otherwise
@@ -703,7 +703,7 @@ class AppointmentEmailService
     {
         try {
             log_message('info', 'Sending feedback reminder notification to student: ' . $studentId);
-            
+
             // Get student email
             $studentEmail = $this->getStudentEmail($studentId);
             if (!$studentEmail) {
@@ -844,8 +844,168 @@ class AppointmentEmailService
     }
 
     /**
+     * Send feedback submission notification to counselor
+     *
+     * @param string $counselorId The counselor ID
+     * @param array $feedbackData The feedback details including student name, appointment date, etc.
+     * @return bool True if email sent successfully, false otherwise
+     */
+    public function sendFeedbackSubmissionNotification(string $counselorId, array $feedbackData): bool
+    {
+        try {
+            log_message('info', 'Sending feedback submission notification to counselor: ' . $counselorId);
+
+            // Get counselor email
+            $counselorEmail = $this->getCounselorEmail($counselorId);
+            if (!$counselorEmail) {
+                log_message('error', 'Counselor email not found for ID: ' . $counselorId);
+                return false;
+            }
+
+            // Clear previous recipients
+            $this->mailer->clearAddresses();
+
+            // Add recipient
+            $this->mailer->addAddress($counselorEmail);
+
+            // Set email content
+            $this->mailer->isHTML(true);
+            $this->mailer->Subject = 'New Student Feedback Submitted - ' . $this->emailConfig->fromName;
+            $this->mailer->Body = $this->createFeedbackSubmissionEmailBody($feedbackData);
+            $this->mailer->AltBody = $this->createFeedbackSubmissionTextBody($feedbackData);
+
+            // Send email
+            $result = $this->mailer->send();
+
+            if ($result) {
+                log_message('info', 'Feedback submission notification sent successfully to: ' . $counselorEmail);
+                return true;
+            } else {
+                log_message('error', 'Failed to send feedback submission notification to: ' . $counselorEmail);
+                log_message('error', 'PHPMailer ErrorInfo: ' . $this->mailer->ErrorInfo);
+                return false;
+            }
+
+        } catch (Exception $e) {
+            log_message('error', 'Error sending feedback submission notification: ' . $e->getMessage());
+            log_message('error', 'PHPMailer ErrorInfo: ' . $this->mailer->ErrorInfo);
+            return false;
+        }
+    }
+
+    /**
+     * Create HTML email body for feedback submission notification
+     *
+     * @param array $feedbackData The feedback data
+     * @return string The HTML email body
+     */
+    private function createFeedbackSubmissionEmailBody(array $feedbackData): string
+    {
+        $studentName = $feedbackData['student_name'] ?? 'Unknown Student';
+        $studentId = $feedbackData['student_id'] ?? 'Unknown';
+        $appointmentDate = date('F j, Y', strtotime($feedbackData['appointment_date'] ?? 'now'));
+        $appointmentTime = $feedbackData['appointment_time'] ?? 'Unknown';
+        $consultationType = $feedbackData['consultation_type'] ?? 'Consultation';
+        $additionalComments = $feedbackData['additional_comments'] ?? 'No additional comments provided.';
+
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+                .appointment-details { background-color: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #28a745; }
+                .student-info { background-color: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #060E57; }
+                .feedback-info { background-color: #e7f3ff; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+                .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+                .label { font-weight: bold; color: #060E57; }
+                .value { margin-left: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>✅ New Student Feedback Submitted</h2>
+                    <p>Counselign - The USTP Guidance Counseling Sanctuary</p>
+                </div>
+
+                <div class='content'>
+                    <p>Dear Counselor,</p>
+
+                    <p>A student has submitted feedback for their completed appointment with you. Please review the details below:</p>
+
+                    <div class='appointment-details'>
+                        <h3>📋 Appointment Details</h3>
+                        <p><span class='label'>Date:</span><span class='value'>{$appointmentDate}</span></p>
+                        <p><span class='label'>Time:</span><span class='value'>{$appointmentTime}</span></p>
+                        <p><span class='label'>Consultation Type:</span><span class='value'>{$consultationType}</span></p>
+                    </div>
+
+                    <div class='student-info'>
+                        <h3>👤 Student Information</h3>
+                        <p><span class='label'>Name:</span><span class='value'>{$studentName}</span></p>
+                        <p><span class='label'>Student ID:</span><span class='value'>{$studentId}</span></p>
+                    </div>
+
+                    <div class='feedback-info'>
+                        <h3>💬 Additional Comments</h3>
+                        <p>{$additionalComments}</p>
+                    </div>
+
+                    <p><strong>Action:</strong> You can view the detailed feedback in the counseling system.</p>
+
+                    <p>Thank you for your dedication to providing excellent service!</p>
+                </div>
+
+                <div class='footer'>
+                    <p>This is an automated notification from Counselign - The USTP Guidance Counseling Sanctuary.</p>
+                    <p>Please do not reply to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>";
+    }
+
+    /**
+     * Create plain text email body for feedback submission notification
+     *
+     * @param array $feedbackData The feedback data
+     * @return string The plain text email body
+     */
+    private function createFeedbackSubmissionTextBody(array $feedbackData): string
+    {
+        $studentName = $feedbackData['student_name'] ?? 'Unknown Student';
+        $studentId = $feedbackData['student_id'] ?? 'Unknown';
+        $appointmentDate = date('F j, Y', strtotime($feedbackData['appointment_date'] ?? 'now'));
+        $appointmentTime = $feedbackData['appointment_time'] ?? 'Unknown';
+        $consultationType = $feedbackData['consultation_type'] ?? 'Consultation';
+        $additionalComments = $feedbackData['additional_comments'] ?? 'No additional comments provided.';
+
+        return "NEW STUDENT FEEDBACK SUBMITTED\n\n" .
+               "Dear Counselor,\n\n" .
+               "A student has submitted feedback for their completed appointment with you. Please review the details below:\n\n" .
+               "APPOINTMENT DETAILS:\n" .
+               "Date: {$appointmentDate}\n" .
+               "Time: {$appointmentTime}\n" .
+               "Consultation Type: {$consultationType}\n\n" .
+               "STUDENT INFORMATION:\n" .
+               "Name: {$studentName}\n" .
+               "Student ID: {$studentId}\n\n" .
+               "ADDITIONAL COMMENTS:\n" .
+               "{$additionalComments}\n\n" .
+               "You can view the detailed feedback in the counseling system.\n\n" .
+               "Thank you for your dedication to providing excellent service!\n\n" .
+               "This is an automated notification from Counselign - The USTP Guidance Counseling Sanctuary.\n" .
+               "Please do not reply to this email.";
+    }
+
+    /**
      * Send appointment cancellation notification to student
-     * 
+     *
      * @param string $studentId The student ID
      * @param array $appointmentData The appointment data
      * @param array $counselorData The counselor details

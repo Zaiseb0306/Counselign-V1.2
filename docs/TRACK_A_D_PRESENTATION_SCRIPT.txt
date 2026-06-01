@@ -1,0 +1,1048 @@
+Counselign — Track A + D Presentation Script (Detailed)
+
+System: Counselign — UGC Counseling Appointment Management System  
+Stack: CodeIgniter 4 · MariaDB/MySQL · Apache (XAMPP)  
+Tracks: Track A (Database-Driven) + Track D (Data Mining)
+
+Fill in brackets [like this] before defense day.
+
+========================================================================
+  Table of Contents
+
+1. Timing & Roles
+2. Part 1 — Pitch (5 min) — Each Slide Specified
+3. Part 2 — Demo (5 min) — Each Step Specified
+4. Part 3 — Defense (20 min) — Each Topic Specified
+5. Slide Deck — Each Slide Content
+6. Checklists & Backup Lines
+
+========================================================================
+  Timing & Roles
+
+| Block | Duration | Speaker | Slide(s) |
+|-------|----------|---------|----------|
+| Title + Problem | 1:00 | [Member 1] | 1–2 |
+| Users + Objectives | 1:00 | [Member 2] | 3–4 |
+| Architecture + Ethics | 1:30 | [Member 3] | 5–6 |
+| Data mining theory | 1:30 | [Member 1] | 7 |
+| Demo Track A | 2:30 | [Member 2] | (live) |
+| Demo Track D | 2:30 | [Member 3] | (live) |
+| Q&A | 20:00 | All rotate | 6 |
+
+Base URL (local): http://localhost/Counselign/public/  
+Login: http://localhost/Counselign/public/ → POST auth/login
+
+========================================================================
+Part 1 — Pitch (5 minutes)
+
+========================================================================
+  Slide 1 — Title Page
+
+Duration: 15 seconds  
+Speaker: [Member 1]
+
+    What to put on the slide
+
+| Element | Content |
+|---------|---------|
+| Title | Counselign — Counseling Appointment Management System |
+| Subtitle | Track A (Database-Driven) + Track D (Data Mining) |
+| Members | [Full Name 1], [Full Name 2], [Full Name 3] |
+| Course | [Course Name] — Section [__] |
+| Adviser | [Adviser Name] |
+| Client | [USTP CDO Guidance / Counseling Office] |
+| Date | [Defense Date] |
+
+    Full script (read aloud)
+
+“Good morning/afternoon, panelists and classmates. We are [Member 1], [Member 2], and [Member 3] from [Course], Section [__].  
+ 
+Our capstone system is Counselign — a web-based counseling appointment and student support platform built for [Guidance Office / Client].  
+ 
+This presentation covers Track A, our database-driven MVC system with full CRUD, and Track D, our integrated data mining for feedback and appointment intelligence.”
+
+    Do not say
+
+- Long technology list on title slide  
+- “We used AI for everything” (be accurate: lexicon + SQL analytics)
+
+========================================================================
+  Slide 2 — Problem
+
+Duration: 45 seconds  
+Speaker: [Member 1]
+
+    What to put on the slide
+
+- Bullet 1: Manual appointment booking → long queues, missed slots  
+- Bullet 2: Paper / scattered records → hard to track PDS and session history  
+- Bullet 3: No unified view of satisfaction or booking trends  
+- Optional image: Queue / paper form vs digital calendar (before/after)
+
+    Full script
+
+“Many students need counseling, but booking is still often manual — walk-ins, phone calls, or paper forms. That creates long wait times and scheduling conflicts.  
+ 
+Counselors and admins must also manage Personal Data Sheets (PDS), appointment status, and follow-up sessions. When these live in separate files, data becomes inconsistent and hard to audit.  
+ 
+Finally, the office rarely has automated insight into whether students are satisfied or which periods have the most demand.  
+ 
+Our problem statement: The guidance unit needs one secure system to store related data, perform CRUD operations, and analyze patterns — not just digitize a form.”
+
+    Panel hook (if interrupted)
+
+“We are not replacing human counselors; we are supporting their workflow and reporting.”
+
+========================================================================
+  Slide 3 — Clients & Target Users
+
+Duration: 45 seconds  
+Speaker: [Member 2]
+
+    What to put on the slide
+
+| Role | Key features in Counselign |
+|------|---------------------------|
+| Client | University Guidance / Counseling Office |
+| Student | Book appointments, PDS, feedback, messages |
+| Counselor | Approve/reschedule, availability, view feedback |
+| Admin | Users, analytics, announcements, resources, feedback questions |
+
+    Full script
+
+“Our client is the institutional counseling unit — they own the process and data policies.  
+ 
+Target users are three roles, each with a separate dashboard after login:  
+ 
+1. Students — schedule appointments, complete PDS, submit post-session feedback, read announcements.  
+2. Counselors — manage their appointment queue, update status, set availability, review pending feedback.  
+3. Admins — oversee all users, system-wide appointments, resources, feedback question bank, and analytics.  
+ 
+Access is enforced in controllers using session role — a student cannot open admin/data-analytics, for example.”
+
+    Technical proof (if asked)
+
+- Auth: app/Controllers/Auth.php → session role: student | counselor | admin  
+- Route groups: app/Config/Routes.php — admin/*, student/*, counselor/*
+
+========================================================================
+  Slide 4 — Objectives
+
+Duration: 45 seconds  
+Speaker: [Member 2]
+
+    What to put on the slide
+
+1. Digitize appointment lifecycle (request → approval → completion → feedback)  
+2. Implement strict MVC with normalized MySQL storage  
+3. Demonstrate CRUD on core entities with relational integrity  
+4. Integrate data mining: classification, trend analysis, pattern detection  
+5. Apply ethical data handling (RBAC, validation, purpose limitation)
+
+    Full script
+
+“Our specific objectives align with Tracks A and D:  
+ 
+First, replace manual booking with a digital workflow students and staff can trust.  
+Second, persist all records in MariaDB with clear relationships — users, appointments, PDS tables, feedback.  
+Third, prove Create, Read, Update, Delete in the live system, which we will demo next.  
+Fourth, go beyond storage: classify feedback sentiment, interpret Likert satisfaction levels, and aggregate appointment trends for planning.  
+Fifth, protect sensitive counseling data through role-based access, hashed passwords, and server-side validation — not optional extras, but core design.”
+
+========================================================================
+  Slide 5 — System Architecture (Track A — MVC)
+
+Duration: 60 seconds  
+Speaker: [Member 3]  
+Visual: Use diagram from docs/system_architecture.md
+
+    What to put on the slide
+
+``
+Browser → Apache (XAMPP) → CodeIgniter 4
+                              ├── Controller (business logic)
+                              ├── Model (database)
+                              └── View (UI)
+                                    ↓
+                              MariaDB (InnoDB)
+`
+
+| MVC layer | Counselign folder | Responsibility |
+|-----------|-------------------|----------------|
+| Model | app/Models/ | SQL, validation rules, aggregates |
+| View | app/Views/ | HTML/PHP templates, no business rules |
+| Controller | app/Controllers/ | HTTP, auth, workflows, JSON APIs |
+
+    Full script
+
+“Counselign follows strict MVC on CodeIgniter 4.  
+ 
+When a student books an appointment, the browser sends HTTP POST to Apache. The controller Student\Appointment::save() validates the session and form data. It writes through the database layer into the appointments table. The view only displays forms and lists — it never runs SQL.  
+ 
+Models such as AppointmentModel, UserModel, and StudentPDSModel encapsulate persistence. For multi-table PDS saves, StudentPDSModel extends BaseModel and can run atomic transactions so partial saves do not corrupt data.  
+ 
+This separation is Track A’s requirement: Model → Database, View → UI, Controller → Business logic. Our architecture document is in docs/system_architecture.md.”
+
+    Example one-liner for panel
+
+“If you open any file in app/Views/, you will not find INSERT or UPDATE statements — that is intentional.”
+
+    Example flow (memorize)
+
+| Step | Component | File |
+|------|-----------|------|
+| 1 | Route | Routes.php → student/appointment/save |
+| 2 | Controller | app/Controllers/Student/Appointment.php → save() |
+| 3 | Database | $db->table('appointments')->insert(...) |
+| 4 | View (earlier) | app/Views/student/student_schedule_appointment.php |
+
+========================================================================
+  Slide 6 — Ethical Data Use
+
+Duration: 45 seconds  
+Speaker: [Member 3]
+
+    What to put on the slide
+
+| Principle | Implementation in Counselign |
+|-----------|------------------------------|
+| Role-based access | Session role checks in every admin/counselor/student controller |
+| Confidentiality | Students see only their student_id rows |
+| Data minimization | Forms collect only fields required for counseling ops |
+| Security | Password hashing; server-side validation in models |
+| Transparency | Feedback form explains comments may be analyzed for service quality |
+| Purpose limitation | Data used for appointments, PDS, reporting — not sold/shared |
+
+    Full script
+
+“Counseling data is highly sensitive, so ethical use is part of our design — not an afterthought.  
+ 
+We use role-based access control: each controller checks session()->get('role') before loading data. A student query always includes WHERE student_id = [logged-in user].  
+ 
+Passwords are hashed before storage. Inputs pass validation rules in models — for example ResourceModel requires title and type.  
+ 
+For feedback mining, we analyze additional_comments to produce sentiment_label and sentiment_score stored in student_feedback — used for admin quality review, not public posting.  
+ 
+We align with institutional guidance: only authorized staff see identifiable records; students consent by submitting feedback after a completed session.”
+
+========================================================================
+  Slide 7 — Data Mining Algorithm & Why (Track D)
+
+Duration: 60 seconds  
+Speaker: [Member 1]  
+Visual: Simple pipeline diagram (see Slide 4.2 in deck section)
+
+    What to put on the slide
+
+| Track D requirement | Algorithm / method | File |
+|--------------------|--------------------|------|
+| Classification | Lexicon-based sentiment (positive / negative / neutral) | app/Services/SentimentAnalysisService.php |
+| Classification | Likert weighted mean → satisfaction band | app/Models/StudentFeedbackAnalyticsModel.php |
+| Trend analysis | Time-series SQL aggregation (daily/weekly/monthly) — reports past data only | app/Controllers/Admin/DataAnalytics.php |
+| Pattern recognition | Negative sentiment filter; pending feedback / peak load detection | FeedbackAnalytics, DataAnalytics |
+
+    Full script
+
+“Track D is embedded in the same database — not a separate spreadsheet tool.  
+ 
+Classification — Sentiment: When a student submits feedback, SentimentAnalysisService tokenizes additional_comments, matches positive and negative lexicon words — including Tagalog — applies intensifiers like ‘very’ and negators like ‘not’, then assigns positive, negative, or neutral. Results are saved to sentiment_score (-100 to 100) and sentiment_label. We chose a lexicon approach because it is explainable to the panel, runs on XAMPP without GPU, and needs no large training set.  
+ 
+Classification — Satisfaction: Likert ratings 1–5 are averaged into a weighted mean and mapped to bands: Very Satisfied (4.21–5.00) down to Very Dissatisfied (1.00–1.80) in StudentFeedbackAnalyticsModel.  
+ 
+Trend analysis: DataAnalytics runs SQL GROUP BY on past appointments — counts per day/week/month. There is no predict() or forecast function in code today; admins infer next-period load from charts (e.g. “March had more bookings than February”).  
+ 
+Pattern recognition: Admins filter negative sentiment feedback and view concentrations of pending_feedback appointments — operational patterns that need intervention.  
+ 
+We will now demonstrate CRUD, relationships, and these intelligent outputs live.”
+
+    Closing line
+
+“Thank you for listening to our pitch — [Member 2] will demo Track A, then [Member 3] will demo Track D.”
+
+========================================================================
+Part 2 — Demo & Simulation (5 minutes)
+
+  Pre-demo setup (do before entering the room)
+
+| # | Task | How |
+|---|------|-----|
+| 1 | Start XAMPP | Apache + MySQL running |
+| 2 | Open 3 browser profiles/tabs | Student, Counselor, Admin |
+| 3 | Test accounts | [student@test.com], [counselor@test.com], [admin@test.com] |
+| 4 | Seed data | At least 1 pending appointment; 1 feedback_pending appointment |
+| 5 | Open IDE tab (optional) | Appointment.php, SentimentAnalysisService.php |
+| 6 | Open phpMyAdmin (optional) | Database [counselign_db_name] |
+
+========================================================================
+  Track A — Database & CRUD (2 minutes 30 seconds)
+
+========================================================================
+    A1 — MVC separation (30 sec)
+
+Speaker: [Member 2]  
+Goal: Prove Model / View / Controller split
+
+#### On screen
+
+1. Show IDE or file tree side-by-side with browser.
+
+#### Files to show (in order)
+
+| Layer | Open this file |
+|-------|----------------|
+| Controller | app/Controllers/Student/Appointment.php → scroll to save() |
+| View | app/Views/student/student_schedule_appointment.php |
+| Model (related) | app/Models/AppointmentModel.php (if used) or point to $db->table('appointments') in controller |
+
+#### Full script
+
+“For Track A, here is strict MVC. The view student_schedule_appointment.php is only the form and JavaScript. The controller Appointment::save() checks login, validates date and time, prevents double booking, and inserts into the database. The model layer is CodeIgniter’s database abstraction and our model classes — no HTML in the model. This request never bypasses the controller.”
+
+#### Optional: trace one HTTP request
+
+| Item | Value |
+|------|-------|
+| Method | POST |
+| URL | {base}/student/appointment/save |
+| Route definition | app/Config/Routes.php line ~184 |
+
+========================================================================
+    A2 — CREATE: Book appointment (45 sec)
+
+Speaker: [Member 2]  
+Goal: Insert row into appointments
+
+#### Steps (exact)
+
+| Step | Action | URL / UI |
+|------|--------|----------|
+| 1 | Login as student | {base}/ → login form |
+| 2 | Open schedule page | {base}/student/schedule-appointment |
+| 3 | Fill fields | See table below |
+| 4 | Click submit | Button on schedule form (triggers AJAX POST) |
+| 5 | Confirm success | Toast/alert + redirect or list update |
+| 6 | (Optional) phpMyAdmin | Table appointments → sort by id DESC → show new row |
+
+#### Form fields to fill (example)
+
+| Field (UI label) | POST name | Example value |
+|------------------|-----------|---------------|
+| Preferred Date | preferredDate | [Tomorrow’s date] |
+| Preferred Time | preferredTime | 09:00 AM |
+| Method Type | methodType | Individual |
+| Consultation Type | consultationType | [From dropdown] |
+| Purpose | purpose | Counseling |
+| Counselor Preference | counselorPreference | [Counselor ID] or No preference |
+| Description | description | Demo booking for defense |
+
+#### MVC chain
+
+`
+View: student/student_schedule_appointment.php
+  → POST student/appointment/save
+Controller: App\Controllers\Student\Appointment::save()
+  → validates session role === 'student'
+  → inserts into appointments
+Database: appointments table
+`
+
+#### Columns written (key)
+
+| Column | Value after create |
+|--------|-------------------|
+| student_id | Logged-in user’s user_id |
+| preferred_date | Selected date |
+| preferred_time | Selected time |
+| status | pending |
+| created_at | Current timestamp |
+
+#### Full script
+
+“CREATE: As a student, I submit the appointment form. The controller Appointment::save() validates required fields and inserts one row into appointments. The student_id column links this record to users.user_id — that is our foreign relationship. Status is pending until a counselor or admin approves it. You can see the new row in the database immediately.”
+
+========================================================================
+    A3 — READ: View appointments (30 sec)
+
+Speaker: [Member 2]  
+Goal: SELECT with role-scoped data
+
+#### Student READ
+
+| Step | URL |
+|------|-----|
+| 1 | {base}/student/my-appointments |
+| 2 | List loads via GET student/appointments/get-my-appointments (AJAX) |
+
+#### Admin/Counselor READ
+
+| Step | URL |
+|------|-----|
+| 1 | Login admin | {base}/ |
+| 2 | Appointments | {base}/admin/appointments or {base}/admin/appointments/view-all |
+| 3 | Data API | GET admin/appointments/getAll |
+
+#### MVC chain
+
+`
+Controller: Admin\Appointments::getAll() or Student\Appointment::getMyAppointments()
+  → SQL SELECT with JOINs (student name, course, etc.)
+View: admin/appointments*.php or student/my_appointments view
+`
+
+#### Full script
+
+“READ: The same table is queried differently per role. The student sees only WHERE student_id = [self]. Admin uses Admin\Appointments with JOINs to users and student_academic_info so we can filter by department and year level in analytics. The view only renders JSON results — the query logic stays in the controller/model layer.”
+
+========================================================================
+    A4 — UPDATE: Approve appointment (45 sec)
+
+Speaker: [Member 2]  
+Goal: UPDATE appointments.status
+
+#### Steps
+
+| Step | Role | URL / action |
+|------|------|--------------|
+| 1 | Login counselor or admin | {base}/ |
+| 2 | Open appointments | {base}/counselor/appointments or {base}/admin/appointments |
+| 3 | Find demo pending row | Sort/filter pending |
+| 4 | Click Approve (or change status) | UI button → POST counselor/appointments/updateStatus or updateAppointmentStatus |
+| 5 | Refresh list | Status → approved (or next step in your workflow) |
+
+#### MVC chain
+
+`
+Controller: Admin\Appointments::updateAppointmentStatus()
+  or Counselor\Appointments::updateStatus()
+  → UPDATE appointments SET status = 'approved' WHERE id = ?
+`
+
+#### Alternative script (reschedule)
+
+“UPDATE also covers reschedule via POST admin/appointments/reschedule — same table, different business rule in the controller.”
+
+#### Full script
+
+“UPDATE: Business rules live in the controller — only staff can change status from pending to approved. The model executes UPDATE on appointments.status. Notifications may be generated for the student. This is not a new insert — it modifies an existing relational record.”
+
+========================================================================
+    A5 — DELETE: Feedback question (30 sec)
+
+Speaker: [Member 2]  
+Goal: Hard DELETE on admin-managed entity (clearest CRUD demo)
+
+Use feedback questions instead of appointments if delete/cancel is confusing on appointments.
+
+#### Steps
+
+| Step | URL / action |
+|------|--------------|
+| 1 | Login admin | |
+| 2 | Open page | {base}/admin/feedback-questions |
+| 3 | Click Add / Create | Enter: Question = DEMO – Defense test question |
+| 4 | Save | POST admin/feedback-questions/create |
+| 5 | Show row in table | GET admin/feedback-questions/getAll |
+| 6 | Delete demo row | POST admin/feedback-questions/delete/{id} |
+| 7 | Confirm gone | Refresh list |
+
+#### MVC chain
+
+`
+Controller: Admin\FeedbackQuestions::create() / delete()
+Service: App\Services\FeedbackQuestionsService
+Table: feedback_questions
+`
+
+#### Full script
+
+“DELETE: On the admin Feedback Questions page, we created a test question — INSERT into feedback_questions. We then deleted it via FeedbackQuestions::delete() — row removed from the database. CREATE and DELETE are both explicit CRUD operations with admin-only authorization.”
+
+#### Backup: Student cancel appointment
+
+| URL | POST student/appointments/cancel |
+| Note | May set status = cancelled (soft delete) — explain as business policy |
+
+========================================================================
+    A6 — Data relationships (30 sec)
+
+Speaker: [Member 2]  
+Visual: docs/erd.md on slide or phpMyAdmin diagram
+
+#### Relationships to name aloud
+
+| Parent | Child | Link column | Cardinality |
+|--------|-------|-------------|-------------|
+| users | appointments | appointments.student_id → users.user_id | 1 : many |
+| users | counselors | counselors.counselor_id → users.user_id | 1 : 1 |
+| appointments | student_feedback | student_feedback.appointment_id | 1 : 1 |
+| appointments | follow_up_appointments | original_appointment_id | 1 : many |
+| users | student_personal_info | student_id | 1 : 1 |
+| users | student_academic_info | student_id | 1 : 1 |
+| PDS cluster | many student_* tables | via StudentPDSModel | normalized |
+
+#### Full script
+
+“Track A requires data relationships. Our ERD in docs/erd.md shows users as the hub: students book appointments; counselors link through counselors; after sessions, student_feedback attaches to one appointment. PDS is normalized — personal, academic, family, and services in separate tables — coordinated by StudentPDSModel with transactional saves. InnoDB and migrations enforce referential integrity.”
+
+#### phpMyAdmin quick show (10 sec)
+
+1. Open appointments → click relation view  
+2. Open student_feedback → show appointment_id, sentiment_label
+
+========================================================================
+  Track D — Data Mining (2 minutes 30 seconds)
+
+========================================================================
+    D1 — Classification: Sentiment on feedback (60 sec)
+
+Speaker: [Member 3]  
+Goal: Text → sentiment_label + sentiment_score
+
+#### Prerequisite
+
+- One appointment with status = 'feedback_pending' for demo student  
+- Or complete a session beforehand in test data
+
+#### Steps
+
+| Step | URL / action |
+|------|--------------|
+| 1 | Login student | |
+| 2 | My appointments | {base}/student/my-appointments |
+| 3 | Open feedback | {base}/student/feedback?appointment_id={ID} |
+| 4 | Rate all Likert questions | Use 4 or 5 for positive demo |
+| 5 | Additional comments | See sample texts below |
+| 6 | Submit | POST student/feedback/submit |
+| 7 | Show DB or admin view | sentiment_label, sentiment_score |
+
+#### Sample comments (pick one)
+
+| Expected label | Type this in Additional Comments |
+|----------------|----------------------------------|
+| positive | The counselor was very helpful and understanding. Thank you. |
+| negative | I was not satisfied with the long wait time. |
+| neutral | The session was okay. Nothing special. |
+
+#### MVC + mining chain
+
+`
+Controller: Student\Feedback::submit()
+  → SentimentAnalysisService::analyze($additional_comments)
+  → getScoreForStorage() → INSERT student_feedback
+  → UPDATE appointments.status = 'completed'
+`
+
+#### Code files to mention
+
+| File | Role |
+|------|------|
+| app/Services/SentimentAnalysisService.php | Lexicon, intensifiers, negators |
+| app/Controllers/Student/Feedback.php lines ~111–134 | Calls service on submit |
+| Table student_feedback | Stores sentiment_score, sentiment_label |
+
+#### Full script
+
+“For Track D classification, the student submits free-text in Additional Comments. On submit, the controller instantiates SentimentAnalysisService. It counts positive and negative dictionary words, handles ‘very’ as an intensifier and ‘not’ as a negator, and computes a score from -1 to 1.  
+ 
+The system stored sentiment_label = [positive/negative/neutral] and sentiment_score as an integer from -100 to 100.  
+ 
+Panel line: *Based on this comment, the system classified sentiment as [label] because it detected [N] positive and [N] negative lexicon matches.*”
+
+========================================================================
+    D2 — Classification: Likert satisfaction bands (30 sec)
+
+Speaker: [Member 3]
+
+#### Steps
+
+| Step | URL |
+|------|-----|
+| 1 | Login admin | |
+| 2 | Feedback Analytics | {base}/admin/feedback-analytics |
+| 3 | Wait for charts/data | GET admin/feedback-analytics/data |
+| 4 | Point to Overall Mean | e.g. 4.35 |
+| 5 | Point to Interpretation | e.g. Satisfied or Very Satisfied |
+
+#### How interpretation is computed
+
+| Weighted mean range | Label |
+|---------------------|-------|
+| 4.21 – 5.00 | Very Satisfied |
+| 3.41 – 4.20 | Satisfied |
+| 2.61 – 3.40 | Neutral |
+| 1.81 – 2.60 | Dissatisfied |
+| 1.00 – 1.80 | Very Dissatisfied |
+
+Model: StudentFeedbackAnalyticsModel::getInterpretation()
+
+#### Full script
+
+“The second classification layer is survey-based. Each Likert answer is 1 to 5. The analytics model computes a weighted mean per question and overall. A mean of [X] maps to [Satisfied / Very Satisfied] — that is rule-based classification of numeric feedback, standard in institutional surveys.”
+
+========================================================================
+    D3 — Trend analysis (appointment history) (45 sec)
+
+Speaker: [Member 3]  
+Important: This is descriptive analytics, not automated prediction. See § Why this is not “prediction” in code below.
+
+#### What the code actually does
+
+| Function | File | Behavior |
+|----------|------|----------|
+| getDailyAnalytics() | DataAnalytics.php | COUNT(*) grouped by date, last 30 days |
+| getMonthlyAnalytics() | same | Historical monthly totals |
+| getDetailedAnalytics() | same | GROUP BY period + department + year level |
+
+There is no: predict(), forecast(), regression, or “next month” output from PHP.
+
+#### Steps
+
+| Step | URL |
+|------|-----|
+| 1 | Admin Data Analytics | {base}/admin/data-analytics |
+| 2 | Select period | Daily / Monthly (UI toggle) |
+| 3 | Optional filters | Department (course), Year level |
+| 4 | Point at chart peak | Highest bar = past peak, not a forecast |
+
+#### API endpoints (behind charts)
+
+| Period | GET endpoint |
+|--------|----------------|
+| Daily | admin/data-analytics/getDailyAnalytics |
+| Weekly | admin/data-analytics/getWeeklyAnalytics |
+| Monthly | admin/data-analytics/getMonthlyAnalytics |
+| Yearly | admin/data-analytics/getYearlyAnalytics |
+| Detailed | admin/data-analytics/getDetailedAnalytics?timePeriod=monthly |
+
+#### Full script (honest wording)
+
+“This module performs trend analysis — it aggregates historical appointments with SQL GROUP BY. For example, over the last 30 days, [day/month] had the highest count.  
+ 
+The system output is the chart and JSON totals. Forecasting — saying next month will be busier — is a decision the admin makes from that pattern; we do not auto-generate a future value in code yet. Planned forecasting is documented in docs/DATA_ANALYTICS_PLAN.md Phase 3.”
+
+#### If the rubric requires “prediction” — say this to the panel
+
+“Track D asks for prediction from trends. We satisfy that as human-in-the-loop inference: the system surfaces the trend; the admin predicts staffing. Alternatively, sentiment trend (getSentimentTrend()) shows whether satisfaction is improving or declining month over month — that supports predicting service-quality risk, still from historical series.”
+
+========================================================================
+    D4 — Pattern recognition (30 sec)
+
+Speaker: [Member 3]
+
+#### Option A — Negative sentiment pattern
+
+| Step | URL |
+|------|-----|
+| 1 | {base}/admin/feedback-analytics/view-feedback or filter UI |
+| 2 | Filter sentiment = negative | Counselor PendingFeedback also filters sentiment_label |
+| 3 | Count rows | “We see [N] negative feedback in this period” |
+
+Model method: StudentFeedbackAnalyticsModel::getNegativeFeedback()
+
+#### Option B — Operational pattern
+
+| Step | URL |
+|------|-----|
+| 1 | {base}/admin/data-analytics |
+| 2 | Success vs failed / pending follow-up metrics | getSuccessFailedAnalytics |
+| 3 | Point at spike in pending_followup | |
+
+#### Full script
+
+“Pattern recognition surfaces anomalies. Clusters of sentiment_label = negative indicate service issues worth review. Separately, many appointments in pending_feedback or feedback_pending status form an operational pattern — students not completing surveys — which admins can act on with reminders via counselor/pending-feedback.”
+
+========================================================================
+    Demo failure backup
+
+| Problem | Backup |
+|---------|--------|
+| Login fails | Screenshots in docs/ + local video |
+| No feedback_pending | Show phpMyAdmin row with existing sentiment_label |
+| Charts empty | Explain seed data; show SENTIMENT_ANALYSIS_GUIDE.md example JSON |
+| Apache down | Walk through code path only + ERD |
+
+========================================================================
+  Why Data Analytics is NOT “prediction” in code
+
+You asked the right question. Here is the precise answer for defense.
+
+    What “prediction” usually means in software
+
+| Real prediction | What Counselign has today |
+|-----------------|---------------------------|
+| A function computes a future value (next week’s bookings, risk score, etc.) | None — no predict(), forecast(), or ML model |
+| Output example: “Expected appointments next month: 42” | Output: “Last month had 38 appointments” (COUNT + GROUP BY) |
+| Uses past data and a model/rule to project forward | Uses past data only to chart history |
+
+DataAnalytics::getDailyAnalytics() (and related methods) run SQL like:
+
+`sql
+SELECT DATE(preferred_date) AS day, COUNT(*) AS total_appointments
+FROM appointments
+WHERE preferred_date >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+GROUP BY DATE(preferred_date)
+`
+
+That is reporting, not forecasting.
+
+    Why the old script said “prediction”
+
+The Track D rubric gives an example: *“Predicting future outcomes from trends.”* The script stretched that to mean: “admins look at a trend chart and decide the future.” That is human inference, not system prediction. A strict panelist (or you) can correctly say: there is no prediction function.
+
+    What Track D you *do* have in code (be honest)
+
+| Rubric item | Implemented? | Where |
+|-------------|--------------|--------|
+| Classification | Yes | SentimentAnalysisService → positive / negative / neutral |
+| Classification | Yes | StudentFeedbackAnalyticsModel::getInterpretation() → Satisfied bands |
+| Prediction | No (automated) | Only planned in docs/DATA_ANALYTICS_PLAN.md |
+| Pattern recognition | Yes | getNegativeFeedback(), peak counts, pending_feedback / pending_followup metrics |
+
+    How to present Track D without overstating
+
+Option A — Honest (recommended): Demo classification + pattern recognition strongly. For trends, say “trend analysis for decision support” and explain the admin infers the future from the chart.
+
+Option B — Map sentiment trend as “prediction” (weaker but defensible): getSentimentTrend() shows if satisfaction is going down month over month — you can say the system indicates risk that service quality may worsen. Still historical, but closer to “outcome from trends.”
+
+Option C — Add a real predict function (best for rubric): e.g. next month = average of last 3 months of total_appointments in DataAnalytics.php — then you can honestly demo “the system predicted X.”
+
+    One sentence for the panel
+
+“Our appointment analytics module is descriptive data mining today; automated prediction is on the roadmap. We meet Track D prediction through trend visibility plus admin planning, and through sentiment/satisfaction classification on feedback.”
+
+========================================================================
+Part 3 — Defense (20 minutes)
+
+Every member must answer. Assign primary owner per section.
+
+========================================================================
+  3.1 MVC Structure — Full Q&A
+
+Primary owner: [Member 3]
+
+    Q: What is the difference between Model, View, and Controller in your project?
+
+Answer:
+
+“In Counselign, the View is only presentation — for example app/Views/student/student_schedule_appointment.php renders HTML and JavaScript. The Controller — such as Student\Appointment — receives HTTP requests, checks authentication, validates input, and decides what to return. The Model layer is our app/Models/* classes and CodeIgniter’s query builder, which execute database operations. We never put SQL inside views.”
+
+    Q: Give a complete request example from login to booking.
+
+Answer:
+
+“1) Auth::login() validates credentials against users. 2) Session stores role and user_id. 3) Student opens GET student/schedule-appointment → Appointment::schedule() returns the view. 4) Form POSTs to student/appointment/save → Appointment::save() inserts into appointments. 5) Response JSON tells the UI success or error.”
+
+    Q: Why CodeIgniter 4?
+
+Answer:
+
+“It provides built-in MVC routing, migrations, validation, and session handling. It deploys on XAMPP with PHP and MariaDB, which matches our school environment.”
+
+========================================================================
+  3.2 Database & Relationships — Full Q&A
+
+Primary owner: [Member 2]
+
+    Q: How is a student linked to an appointment?
+
+Answer:
+
+“appointments.student_id stores the student’s users.user_id (10-digit identifier), not necessarily the internal users.id integer. Controllers always filter by this key for student-facing queries.”
+
+    Q: Why is PDS split into many tables?
+
+Answer:
+
+“Normalization reduces redundancy and mirrors official PDS sections: personal, academic, family, address, services needed/availed, etc. StudentPDSModel aggregates reads and uses BaseModel::executeAtomic() for multi-table writes.”
+
+    Q: How do you ensure integrity?
+
+Answer:
+
+“InnoDB engine, foreign key migrations in app/Database/Migrations/, unique constraints where needed, and transactions on multi-step operations like feedback submit — transStart() in Feedback::submit() updates both student_feedback and appointments together.”
+
+    Q: Where is the ERD?
+
+Answer:
+
+“docs/erd.md — Mermaid diagrams for core entities, PDS, and feedback.”
+
+========================================================================
+  3.3 CRUD Logic — Full Q&A
+
+Primary owner: [Member 2]
+
+    Q: Where is CREATE implemented for appointments?
+
+| Item | Detail |
+|------|--------|
+| Route | POST student/appointment/save |
+| Controller | App\Controllers\Student\Appointment::save() |
+| Table | appointments |
+| Method | INSERT via $db->table('appointments')->insert($data) |
+
+    Q: Where is READ implemented?
+
+| Role | Route | Controller method |
+|------|-------|-------------------|
+| Student | GET student/appointments/get-my-appointments | Appointment::getMyAppointments() |
+| Admin | GET admin/appointments/getAll | Admin\Appointments::getAll() |
+
+    Q: Where is UPDATE implemented?
+
+| Action | Route | Field changed |
+|--------|-------|---------------|
+| Approve | POST admin/appointments/updateAppointmentStatus | status |
+| Reschedule | POST admin/appointments/reschedule | date/time/status |
+| Student edit | POST student/appointments/update | appointment fields |
+
+    Q: Where is DELETE implemented?
+
+| Entity | Route | Note |
+|--------|-------|------|
+| Feedback question | POST admin/feedback-questions/delete/{id} | Hard delete |
+| Resource | DELETE admin/resources/delete/{id} | File + row |
+| Appointment | DELETE student/appointments/delete/{id} or cancel | May use cancel status |
+
+    Q: What is ACID in your system?
+
+Answer:
+
+“Atomicity: Feedback::submit() uses $db->transStart() — feedback insert and appointment status update commit or rollback together. Consistency: validation rules and foreign keys. Isolation: READ COMMITTED via TransactionManager. Durability: committed rows persist in InnoDB. See public/Misc/ACID_IMPLEMENTATION_SUMMARY.md.”
+
+========================================================================
+  3.4 Testing Results — Full Q&A
+
+Primary owner: [Member 1]
+
+    Q: What did you test?
+
+Answer (customize with your real results):
+
+| Test case | Expected | Result |
+|-----------|----------|--------|
+| Student login | Redirect to student dashboard | Pass |
+| Book appointment | Row in appointments, status pending | Pass |
+| Admin approve | Status approved | Pass |
+| Submit feedback | sentiment_label populated | Pass |
+| Analytics load | JSON success: true | Pass |
+| Unauthorized admin URL as student | 403 or redirect | Pass |
+
+“Details: docs/software_implementation_testing.md or docs/testflow.text.”
+
+    Q: Limitations?
+
+Answer:
+
+“Lexicon sentiment misses sarcasm and mixed language sentences. Trend charts need sufficient historical rows — empty charts mean insufficient seed data. We do not claim automated forecasting until a predict function exists. We document these honestly.”
+
+========================================================================
+  3.5 Data Mining — Full Q&A
+
+Primary owner: [Member 1]
+
+    Q: Name your algorithms.
+
+Answer:
+
+“1) Lexicon-based sentiment analysis — rule-based classification. 2) Weighted mean + threshold bands — Likert classification. 3) SQL aggregation — GROUP BY time period for trends. 4) Threshold filtering — negative sentiment and pending feedback counts as pattern detection.”
+
+    Q: How accurate is sentiment analysis?
+
+Answer:
+
+“We tested sample sentences: clear positive and negative phrases classify correctly. Neutral or sarcastic comments may default to neutral — we recommend human review for negative flags, which the admin UI supports.”
+
+| Test input | Expected |
+|------------|----------|
+| Very helpful staff, thank you! | positive |
+| Not satisfied with the wait | negative |
+| Okay session | neutral |
+
+    Q: Where is your prediction function?
+
+Answer:
+
+“We are transparent: DataAnalytics does not have a prediction function. It returns historical counts via SQL aggregation. The rubric’s ‘prediction from trends’ is met in our project as decision support — the system shows the trend; staff interpret it. Automated forecasting is listed in docs/DATA_ANALYTICS_PLAN.md Phase 3 but not built yet. Our classification (sentiment, Likert bands) and pattern recognition (negative feedback clusters) are implemented in PHP.”
+
+    Q: Is that machine learning?
+
+Answer:
+
+“Sentiment uses rule-based lexicon classification, not neural networks. Appointment analytics are descriptive (COUNT/GROUP BY), not predictive functions. Formal forecasting is planned in docs/DATA_ANALYTICS_PLAN.md Phase 3 but not implemented in the current codebase.”
+
+    Q: Why not use ChatGPT or deep learning?
+
+Answer:
+
+“Explainability for academic defense, no GPU dependency, data privacy kept on-premise on XAMPP, and small labeled dataset for counseling-specific text.”
+
+========================================================================
+Slide Deck — Each Slide Specified
+
+========================================================================
+  Slide 1 — Title
+
+Copy to slide:
+
+`
+Counselign
+Counseling Appointment Management System
+Track A + Track D
+
+[Member 1] | [Member 2] | [Member 3]
+[Course] — Section [__]
+Adviser: [Name]
+[Client / Institution]
+[Date]
+`
+
+Speaker note: Smile, introduce all names, pause 2 sec before problem slide.
+
+========================================================================
+  Slide 2 — Introduction / Problem
+
+Bullets:
+
+- Manual booking → delays & conflicts  
+- Fragmented PDS / records  
+- No automated satisfaction or demand insight  
+
+Image suggestion: Split screen old process vs Counselign dashboard.
+
+========================================================================
+  Slide 3 — Clients & Users
+
+Diagram: Three columns — Student | Counselor | Admin with 3–4 bullets each.
+
+Speaker note: Emphasize RBAC in one sentence.
+
+========================================================================
+  Slide 4 — Objectives
+
+Numbered list 1–5 (from Slide 4 script above).
+
+========================================================================
+  Slide 5 — Flow Chart
+
+Source: docs/system_flowchart.md
+
+Must-show path:
+
+`
+Login → Role Dashboard → Book Appointment → Pending
+  → Approve → Session Complete → Feedback Pending
+  → Submit Feedback (+ Sentiment) → Analytics Dashboard
+`
+
+Speaker note: 30 sec walk-through only — detail in demo.
+
+========================================================================
+  Slide 6 — Design 4.1 Database (ERD)
+
+Source: docs/erd.md — use Diagram 1 (Users, Appointments, Counselors) on one slide; PDS on second if crowded.
+
+Callouts on slide:
+
+- PK / FK labels  
+- student_id as relationship glue  
+- student_feedback linked to appointments
+
+Speaker note: “Normalized PDS — many tables, one student key.”
+
+========================================================================
+  Slide 7 — Design 4.2 Data Mining
+
+Pipeline diagram (draw on slide):
+
+`
+Student comments + Likert ratings
+        ↓
+SentimentAnalysisService / Analytics Model
+        ↓
+student_feedback.sentiment_*, weighted means
+        ↓
+Admin Feedback Analytics + Data Analytics charts
+`
+
+Bullets:
+
+- Classification: sentiment + satisfaction band  
+- Trend analysis: historical appointment volume (not auto-forecast)  
+- Pattern: negative clusters, pending feedback  
+
+Files small text: SentimentAnalysisService.php, StudentFeedbackAnalyticsModel.php, DataAnalytics.php
+
+========================================================================
+  Slide 8 — System Simulation
+
+Content: 4 screenshots with captions:
+
+1. Schedule appointment (CREATE)  
+2. Admin appointment list (READ/UPDATE)  
+3. Feedback form submit (Classification)  
+4. Analytics dashboard (Trend/Pattern)  
+
+Speaker note: “We will now run this live.”
+
+========================================================================
+  Slide 9 — Q&A
+
+Text on slide: “Thank you. We welcome your questions.”
+
+Seat plan:
+
+| Topic | Primary |
+|-------|---------|
+| MVC / CI4 | [Member 3] |
+| DB / CRUD / ERD | [Member 2] |
+| Mining / ethics / testing | [Member 1] |
+
+========================================================================
+Checklists & Backup Lines
+
+  Pre-presentation checklist
+
+- [ ] Member names on Slide 1  
+- [ ] XAMPP Apache + MySQL green  
+- [ ] Test student / counselor / admin logins  
+- [ ] feedback_pending appointment exists  
+- [ ] Migration for sentiment_score, sentiment_label applied  
+- [ ] Tabs open: schedule, appointments, feedback-analytics, data-analytics  
+- [ ] ERD PNG exported from docs/erd.md  
+- [ ] All 3 members rehearsed defense §3.1–3.5  
+
+  Verbatim intelligent-output lines
+
+1. Classification (sentiment):  
+   > “Based on the student’s comment, *‘[read comment]*’, the system classified sentiment as [positive/negative/neutral] with score [score].”
+
+2. Classification (Likert):  
+   > “Based on aggregated ratings, the overall weighted mean is [4.2] — classified as [Very Satisfied].”
+
+3. Trend analysis (honest):  
+   > “Based on the last [30 days / 12 months] of appointments, peak demand was in [period] for [department]. From that historical pattern, the admin may plan for similar load — the system does not output a forecast number yet.”
+
+4. Pattern recognition:  
+   > “The system detected [N] feedback records with negative sentiment and [N] appointments still in pending feedback — a pattern requiring admin follow-up.”
+
+========================================================================
+  Quick URL reference card
+
+| Role | Page | URL path |
+|------|------|----------|
+| Login | Home | / |
+| Student | Schedule | /student/schedule-appointment |
+| Student | My appointments | /student/my-appointments |
+| Student | Feedback | /student/feedback?appointment_id={id} |
+| Admin | Appointments | /admin/appointments |
+| Admin | Feedback questions | /admin/feedback-questions |
+| Admin | Feedback analytics | /admin/feedback-analytics |
+| Admin | Data analytics | /admin/data-analytics |
+| Counselor | Appointments | /counselor/appointments |
+| Counselor | Pending feedback | /counselor/pending-feedback |
+
+*Prepend base:* http://localhost/Counselign/public`
+
+========================================================================
+*Document version: 2.0 — Fully specified Track A + D script for Counselign.*

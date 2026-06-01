@@ -1732,9 +1732,8 @@ html {
 }
 
 /* ===================================
-   ADMIN LOGIN MODAL
+  LOGIN MODALS
    =================================== */
-[data-theme="dark"] #adminPasswordModal .modal-content,
 [data-theme="dark"] #loginModal .modal-content,
 [data-theme="dark"] #signUpModal .modal-content {
   background-color: var(--dm-bg-card);
@@ -1747,16 +1746,14 @@ html {
 [data-theme="dark"] .password-toggle,
 [data-theme="dark"] #toggleLoginPassword,
 [data-theme="dark"] #toggleSignUpPassword,
-[data-theme="dark"] #toggleConfirmPassword,
-[data-theme="dark"] #toggleAdminPassword {
+[data-theme="dark"] #toggleConfirmPassword {
   color: var(--dm-text-muted);
 }
 
 [data-theme="dark"] .password-toggle:hover,
 [data-theme="dark"] #toggleLoginPassword:hover,
 [data-theme="dark"] #toggleSignUpPassword:hover,
-[data-theme="dark"] #toggleConfirmPassword:hover,
-[data-theme="dark"] #toggleAdminPassword:hover {
+[data-theme="dark"] #toggleConfirmPassword:hover {
   color: var(--dm-text-primary);
 }
 

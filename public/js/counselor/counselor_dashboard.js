@@ -1,3 +1,33 @@
+
+function setDashStat(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function updateDashboardStats(updates) {
+  if (!updates || typeof updates !== "object") return;
+  if (updates.pending !== undefined) setDashStat("statPendingCount", updates.pending);
+  if (updates.messages !== undefined) setDashStat("statMessagesCount", updates.messages);
+  if (updates.notifications !== undefined) setDashStat("statNotificationsCount", updates.notifications);
+  if (updates.resources !== undefined) setDashStat("statResourcesCount", updates.resources);
+}
+
+function showDashMessagesLoading(show) {
+  const loader = document.getElementById("messagesLoading");
+  const body = document.querySelector("#messagesCard .dash-panel-body");
+  if (loader) loader.style.display = show ? "block" : "none";
+  if (body) body.style.display = show ? "none" : "";
+}
+
+function showDashAppointmentsLoading(show) {
+  const loader = document.getElementById("appointmentsLoading");
+  const body = document.querySelector("#appointments-container .dash-panel-body");
+  const footer = document.querySelector("#appointments-container .dash-panel-footer");
+  if (loader) loader.style.display = show ? "block" : "none";
+  if (body) body.style.display = show ? "none" : "";
+  if (footer) footer.style.display = show ? "none" : "";
+}
+
 function resolveImageUrl(path) {
   if (!path) return (window.BASE_URL || "/") + "Photos/profile.png";
   const trimmed = String(path).trim();
@@ -80,8 +110,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const appointmentBtn = document.getElementById("appointmentBtn");
   const appointmentForm = document.getElementById("appointmentForm");
   const cancelAppointmentBtn = document.getElementById("cancelAppointmentBtn");
-  const welcomeSection = document.querySelector(".content-panel h3");
-  const welcomeQuote = document.querySelector(".content-panel p");
+  const welcomeSection = document.querySelector(".dash-welcome");
+  const welcomeQuote = null;
   const openChatBtn = document.getElementById("openChatBtn");
   const chatPopup = document.getElementById("chatPopup");
   const closeChat = document.getElementById("closeChat");
@@ -130,7 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
   if (notificationIcon) {
-    notificationIcon.addEventListener("click", function (e) {
+    notificationIcon.addEventListener("click", function () {
       notificationIcon.classList.remove("bell-click");
       void notificationIcon.offsetWidth;
       notificationIcon.classList.add("bell-click");
@@ -207,12 +237,20 @@ document.addEventListener("DOMContentLoaded", function () {
   const studentList = document.getElementById("studentList");
   const messagesCard = document.getElementById("messagesCard");
 
-  // Notification handling
+  // Notification handling - Dropdown + Modal Hybrid Pattern
   function initializeNotifications() {
+    if (window.__counselorNotificationsDropdownInit) {
+      return;
+    }
+    const dropdownEl = document.getElementById("notificationsDropdown");
+    if (dropdownEl && dropdownEl.classList.contains("student-notifications-dropdown")) {
+      return;
+    }
     const notificationIcon = document.getElementById("notificationIcon");
     const notificationsDropdown = document.getElementById(
       "notificationsDropdown"
     );
+    const notificationOverlay = document.getElementById("notificationOverlay");
     const notificationBadge = document.getElementById("notificationBadge");
 
     if (notificationIcon && notificationsDropdown) {
@@ -220,39 +258,79 @@ document.addEventListener("DOMContentLoaded", function () {
 
       notificationIcon.addEventListener("click", function (e) {
         e.stopPropagation();
-        if (
-          notificationsDropdown.style.display === "none" ||
-          !notificationsDropdown.style.display
-        ) {
-          const iconRect = notificationIcon.getBoundingClientRect();
-          const dropdownWidth = Math.min(320, window.innerWidth - 20);
-          let right = window.innerWidth - iconRect.right;
-          if (right + dropdownWidth > window.innerWidth) {
-            right = 10;
+        const isMobile = window.innerWidth < 768;
+        
+        if (isMobile) {
+          // Mobile: Fixed position below button, horizontally centered
+          if (!notificationsDropdown.classList.contains("active")) {
+            const iconRect = notificationIcon.getBoundingClientRect();
+            notificationsDropdown.style.top = (iconRect.bottom + 8) + "px";
+            notificationsDropdown.classList.add("active");
+            if (notificationOverlay) {
+              notificationOverlay.classList.add("active");
+            }
+            loadNotifications();
+          } else {
+            notificationsDropdown.classList.remove("active");
+            if (notificationOverlay) {
+              notificationOverlay.classList.remove("active");
+            }
           }
-          notificationsDropdown.style.top =
-            Math.min(
-              iconRect.bottom + window.scrollY + 10,
-              window.scrollY +
-                window.innerHeight -
-                notificationsDropdown.offsetHeight -
-                10
-            ) + "px";
-          notificationsDropdown.style.right = right + "px";
-          notificationsDropdown.style.display = "block";
-          loadNotifications();
         } else {
-          notificationsDropdown.style.display = "none";
+          // Desktop: Dropdown under button
+          if (
+            notificationsDropdown.style.display === "none" ||
+            !notificationsDropdown.style.display
+          ) {
+            const iconRect = notificationIcon.getBoundingClientRect();
+            const dropdownWidth = Math.min(380, window.innerWidth - 40);
+            let right = window.innerWidth - iconRect.right;
+            if (right + dropdownWidth > window.innerWidth) {
+              right = 10;
+            }
+            notificationsDropdown.style.top =
+              Math.min(
+                iconRect.bottom + window.scrollY + 8,
+                window.scrollY +
+                  window.innerHeight -
+                  notificationsDropdown.offsetHeight -
+                  10
+              ) + "px";
+            notificationsDropdown.style.right = right + "px";
+            notificationsDropdown.style.left = "auto";
+            notificationsDropdown.style.transform = "none";
+            notificationsDropdown.style.display = "block";
+            loadNotifications();
+          } else {
+            notificationsDropdown.style.display = "none";
+          }
         }
       });
 
       document.addEventListener("click", function (e) {
-        if (
-          notificationsDropdown.style.display === "block" &&
-          !notificationsDropdown.contains(e.target) &&
-          e.target !== notificationIcon
-        ) {
-          notificationsDropdown.style.display = "none";
+        const isMobile = window.innerWidth < 768;
+        
+        if (isMobile) {
+          // Mobile: Close via class
+          if (
+            notificationsDropdown.classList.contains("active") &&
+            !notificationsDropdown.contains(e.target) &&
+            e.target !== notificationIcon
+          ) {
+            notificationsDropdown.classList.remove("active");
+            if (notificationOverlay) {
+              notificationOverlay.classList.remove("active");
+            }
+          }
+        } else {
+          // Desktop: Close via display
+          if (
+            notificationsDropdown.style.display === "block" &&
+            !notificationsDropdown.contains(e.target) &&
+            e.target !== notificationIcon
+          ) {
+            notificationsDropdown.style.display = "none";
+          }
         }
       });
 
@@ -261,15 +339,46 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       window.addEventListener("resize", function () {
-        if (notificationsDropdown.style.display === "block") {
+        const isMobile = window.innerWidth < 768;
+        
+        if (!isMobile && notificationsDropdown.style.display === "block") {
           const iconRect = notificationIcon.getBoundingClientRect();
-          const dropdownWidth = Math.min(320, window.innerWidth - 20);
+          const dropdownWidth = Math.min(380, window.innerWidth - 40);
           let right = window.innerWidth - iconRect.right;
           if (right + dropdownWidth > window.innerWidth) {
             right = 10;
           }
           notificationsDropdown.style.right = right + "px";
           notificationsDropdown.style.width = dropdownWidth + "px";
+        } else if (isMobile && notificationsDropdown.classList.contains("active")) {
+          // Close mobile modal when resizing to desktop
+          notificationsDropdown.classList.remove("active");
+          if (notificationOverlay) {
+            notificationOverlay.classList.remove("active");
+          }
+        }
+      });
+
+      // Mobile overlay click handler
+      if (notificationOverlay) {
+        notificationOverlay.addEventListener("click", function () {
+          notificationsDropdown.classList.remove("active");
+          notificationOverlay.classList.remove("active");
+        });
+      }
+
+      // Close on escape key
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          const isMobile = window.innerWidth < 768;
+          if (isMobile && notificationsDropdown.classList.contains("active")) {
+            notificationsDropdown.classList.remove("active");
+            if (notificationOverlay) {
+              notificationOverlay.classList.remove("active");
+            }
+          } else if (!isMobile && notificationsDropdown.style.display === "block") {
+            notificationsDropdown.style.display = "none";
+          }
         }
       });
     }
@@ -288,6 +397,7 @@ document.addEventListener("DOMContentLoaded", function () {
         notificationBadge.classList.add("hidden");
       }
     }
+    updateDashboardStats({ notifications: count });
   }
 
   function fetchNotificationCount() {
@@ -426,8 +536,18 @@ document.addEventListener("DOMContentLoaded", function () {
         const notificationsDropdown = document.getElementById(
           "notificationsDropdown"
         );
+        const notificationOverlay = document.getElementById("notificationOverlay");
+        const isMobile = window.innerWidth < 768;
+        
         if (notificationsDropdown) {
-          notificationsDropdown.style.display = "none";
+          if (isMobile) {
+            notificationsDropdown.classList.remove("active");
+            if (notificationOverlay) {
+              notificationOverlay.classList.remove("active");
+            }
+          } else {
+            notificationsDropdown.style.display = "none";
+          }
         }
 
         if (!notification.is_read) {
@@ -460,11 +580,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const notificationsDropdown = document.getElementById(
       "notificationsDropdown"
     );
-    if (
-      notificationsDropdown &&
-      notificationsDropdown.style.display === "block"
-    ) {
-      notificationsDropdown.style.display = "none";
+    const notificationOverlay = document.getElementById("notificationOverlay");
+    const isMobile = window.innerWidth < 768;
+    
+    if (notificationsDropdown) {
+      if (isMobile) {
+        if (notificationsDropdown.classList.contains("active")) {
+          notificationsDropdown.classList.remove("active");
+          if (notificationOverlay) {
+            notificationOverlay.classList.remove("active");
+          }
+        }
+      } else {
+        if (notificationsDropdown.style.display === "block") {
+          notificationsDropdown.style.display = "none";
+        }
+      }
     }
     fetch(window.BASE_URL + "counselor/appointments/getAppointments")
       .then((response) => response.json())
@@ -534,6 +665,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (body) body.innerHTML = "Error loading appointment details.";
       });
   }
+  window.showCounselorAppointmentDetailsModal = showCounselorAppointmentDetailsModal;
 
   function markNotificationAsRead(notificationId, notificationType, relatedId) {
     const payload = {};
@@ -579,38 +711,7 @@ if (markAllReadBtn) {
     markAllReadBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         e.preventDefault();
-        
-        // Get all notifications currently displayed in the modal
-        const notificationsList = document.querySelector('.notifications-list');
-        if (!notificationsList) return;
-        
-        const notificationItems = notificationsList.querySelectorAll('.notification-item');
-        
-        // Collect all notifications that need to be marked as read
-        const notificationsToMark = [];
-        
-        notificationItems.forEach(item => {
-            const markReadBtn = item.querySelector('.mark-read-btn');
-            if (markReadBtn) {
-                const notificationId = markReadBtn.dataset.notificationId || null;
-                const notificationType = markReadBtn.dataset.type || null;
-                const relatedId = markReadBtn.dataset.relatedId || null;
-                
-                if (notificationId || (notificationType && relatedId)) {
-                    notificationsToMark.push({
-                        notification_id: notificationId,
-                        type: notificationType,
-                        related_id: relatedId
-                    });
-                }
-            }
-        });
-        
-        // If no notifications to mark, just return
-        if (notificationsToMark.length === 0) {
-            return;
-        }
-        
+
         // Mark all notifications as read using the bulk endpoint
         fetch(window.BASE_URL + 'counselor/notifications/mark-read', {
             method: 'POST',
@@ -620,47 +721,27 @@ if (markAllReadBtn) {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // Now mark each individual notification based on its type
-                const markPromises = notificationsToMark.map(notif => {
-                    const payload = {};
-                    
-                    // Handle different notification types
-                    if (notif.notification_id) {
-                        payload.notification_id = notif.notification_id;
-                    } else if (notif.type && notif.related_id) {
-                        payload.type = notif.type;
-                        payload.related_id = notif.related_id;
-                    } else {
-                        return Promise.resolve();
-                    }
-                    
-                    return fetch(window.BASE_URL + 'counselor/notifications/mark-read', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                });
-                
-                // Wait for all individual marks to complete
-                return Promise.all(markPromises);
-            } else {
-                console.error('Error marking all notifications as read:', data.message);
-                throw new Error(data.message);
-            }
-        })
-        .then(() => {
-            // Remove all mark-as-read buttons and unread classes
-            notificationItems.forEach(item => {
-                item.classList.remove('unread');
-                const markReadBtn = item.querySelector('.mark-read-btn');
-                if (markReadBtn) {
-                    markReadBtn.remove();
+                // Clear the notifications list
+                const notificationsList = document.querySelector('.notifications-list');
+                if (notificationsList) {
+                    notificationsList.innerHTML = '<div class="text-center p-3 text-muted">No notifications</div>';
                 }
-            });
-            
-            // Reload notifications to get fresh data
-            loadNotifications();
-            fetchNotificationCount();
+
+                // Update unread count to 0
+                const unreadCountElement = document.querySelector('.notification-badge');
+                if (unreadCountElement) {
+                    unreadCountElement.textContent = '0';
+                    unreadCountElement.classList.add('d-none');
+                }
+
+                // Close the dropdown
+                const dropdown = document.getElementById('notificationsDropdown');
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                }
+            } else {
+                console.error('Failed to mark all notifications as read:', data.message);
+            }
         })
         .catch(error => {
             console.error('Error marking all notifications as read:', error);
@@ -679,6 +760,9 @@ if (markAllReadBtn) {
 
   // Real-time polling for notifications
   function startNotificationPolling() {
+    if (window.__counselorNotificationsDropdownInit) {
+      return;
+    }
     fetchNotificationCount();
     setInterval(() => {
       fetchNotificationCount();
@@ -1200,11 +1284,22 @@ function displayEmptyQuotesCarousel() {
     const notificationsDropdown = document.getElementById(
       "notificationsDropdown"
     );
-    if (
-      notificationsDropdown &&
-      notificationsDropdown.style.display === "block"
-    ) {
-      notificationsDropdown.style.display = "none";
+    const notificationOverlay = document.getElementById("notificationOverlay");
+    const isMobile = window.innerWidth < 768;
+    
+    if (notificationsDropdown) {
+      if (isMobile) {
+        if (notificationsDropdown.classList.contains("active")) {
+          notificationsDropdown.classList.remove("active");
+          if (notificationOverlay) {
+            notificationOverlay.classList.remove("active");
+          }
+        }
+      } else {
+        if (notificationsDropdown.style.display === "block") {
+          notificationsDropdown.style.display = "none";
+        }
+      }
     }
     fetch(window.BASE_URL + "user/appointments/get-my-appointments")
       .then((response) => response.json())
@@ -1308,11 +1403,18 @@ function displayEmptyQuotesCarousel() {
       const notificationsDropdown = document.getElementById(
         "notificationsDropdown"
       );
-      if (
-        notificationsDropdown &&
-        notificationsDropdown.style.display === "block"
-      ) {
-        loadNotifications();
+      const isMobile = window.innerWidth < 768;
+      
+      if (notificationsDropdown) {
+        if (isMobile) {
+          if (notificationsDropdown.classList.contains("active")) {
+            loadNotifications();
+          }
+        } else {
+          if (notificationsDropdown.style.display === "block") {
+            loadNotifications();
+          }
+        }
       }
     }, 30000);
   }
@@ -1336,6 +1438,7 @@ function displayEmptyQuotesCarousel() {
    * counselor_preference matches the logged-in counselor
    */
   function loadRecentPendingAppointments() {
+    showDashAppointmentsLoading(true);
     const container = document.getElementById("appointments-container");
     if (!container) {
       console.warn("Appointments container not found");
@@ -1350,20 +1453,25 @@ function displayEmptyQuotesCarousel() {
         return response.json();
       })
       .then((data) => {
+        showDashAppointmentsLoading(false);
         if (data.status === "success") {
-          displayRecentAppointments(data.appointments || []);
+          const list = data.appointments || [];
+          displayRecentAppointments(list);
+          updateDashboardStats({ pending: data.count ?? list.length });
         } else {
           console.error(
             "Failed to load appointments:",
             data.message || "Unknown error"
           );
           displayRecentAppointments([]);
+          updateDashboardStats({ pending: 0 });
         }
       })
       .catch((error) => {
+        showDashAppointmentsLoading(false);
         console.error("Error fetching appointments:", error);
-        // Display empty state instead of breaking
         displayRecentAppointments([]);
+        updateDashboardStats({ pending: 0 });
       });
   }
 
@@ -1377,7 +1485,7 @@ function displayEmptyQuotesCarousel() {
 
     // Find the appointments content area (the div with gap-3 class)
     const appointmentsContent = container.querySelector(
-      ".d-flex.flex-column.gap-3"
+      ".dash-panel-body.d-flex.flex-column.gap-3"
     );
     if (!appointmentsContent) {
       console.warn("Appointments content area not found");
@@ -1390,7 +1498,7 @@ function displayEmptyQuotesCarousel() {
     if (!appointments || appointments.length === 0) {
       // Show "no appointments" message
       appointmentsContent.innerHTML = `
-            <div class="p-3 bg-light rounded shadow-sm text-center">
+            <div class="dash-item text-center">
                 <p class="text-muted mb-0">No pending appointments at the moment</p>
             </div>
         `;
@@ -1400,7 +1508,7 @@ function displayEmptyQuotesCarousel() {
     // Display each appointment
     appointments.forEach((appointment) => {
       const appointmentCard = document.createElement("div");
-      appointmentCard.className = "p-3 bg-light rounded shadow-sm";
+      appointmentCard.className = "dash-item";
 
       // Format the date safely
       let formattedDate = "N/A";
@@ -1448,6 +1556,7 @@ function displayEmptyQuotesCarousel() {
    * Populates the Messages card on the dashboard
    */
   function loadRecentMessages() {
+    showDashMessagesLoading(true);
     const card = document.getElementById("messagesCard");
     if (!card) return;
 
@@ -1462,27 +1571,34 @@ function displayEmptyQuotesCarousel() {
     )
       .then((r) => r.json())
       .then((data) => {
+        showDashMessagesLoading(false);
         if (data && data.success && Array.isArray(data.conversations)) {
           displayRecentMessages(data.conversations);
+          updateDashboardStats({ messages: data.conversations.length });
         } else {
           displayRecentMessages([]);
+          updateDashboardStats({ messages: 0 });
         }
       })
-      .catch(() => displayRecentMessages([]));
+      .catch(() => {
+        showDashMessagesLoading(false);
+        displayRecentMessages([]);
+        updateDashboardStats({ messages: 0 });
+      });
   }
 
   function displayRecentMessages(conversations) {
     const card = document.getElementById("messagesCard");
     if (!card) return;
 
-    const content = card.querySelector(".d-flex.flex-column");
+    const content = card.querySelector(".dash-panel-body.d-flex.flex-column");
     if (!content) return;
 
     content.innerHTML = "";
 
     if (!conversations || conversations.length === 0) {
       const empty = document.createElement("div");
-      empty.className = "p-3 bg-light rounded shadow-sm text-center";
+      empty.className = "dash-item text-center";
       empty.innerHTML =
         '<p class="text-muted mb-0">No recent student messages</p>';
       content.appendChild(empty);
@@ -1501,7 +1617,7 @@ function displayEmptyQuotesCarousel() {
 
       const preview = document.createElement("div");
       preview.className =
-        "p-3 bg-light rounded shadow-sm d-flex align-items-start gap-2 dashboard-message-card";
+        "dash-item d-flex align-items-start gap-2 dashboard-message-card";
 
       const avatar = document.createElement("img");
       avatar.alt = "Student avatar";
@@ -2574,6 +2690,7 @@ function loadResources() {
       if (data.success && data.resources && data.resources.length > 0) {
         studentDashboardResources = data.resources; // Store for preview module
         renderResourcesAccordion(data.resources);
+        updateDashboardStats({ resources: data.resources.length });
       } else {
         container.innerHTML = `
           <div class="text-center py-5">
@@ -2581,6 +2698,7 @@ function loadResources() {
             <p class="text-muted">No resources available at this time.</p>
           </div>
         `;
+        updateDashboardStats({ resources: 0 });
       }
     })
     .catch(error => {

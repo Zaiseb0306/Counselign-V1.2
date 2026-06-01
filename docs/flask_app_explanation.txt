@@ -1,0 +1,467 @@
+Line-by-line explanation of flask/app.py:
+
+1: from flask import Flask, jsonify, request, make_response
+   - Imports necessary components from Flask: Flask class, jsonify function (to convert Python objects to JSON response), request object (to access incoming request data), and make_response function (to create response objects).
+
+2: import requests
+   - Imports the requests library for making HTTP requests to external APIs.
+
+3: from flask_cors import CORS
+   - Imports the CORS extension for Flask to handle Cross-Origin Resource Sharing.
+
+5: (Blank line)
+
+6: app = Flask(__name__)
+   - Creates a new Flask web application instance. __name__ is a special variable that gets the name of the current module.
+
+7: CORS(app, supports_credentials=True, resources={r"/*": {"origins": ["http://localhost", "http://localhost:80", "http://127.0.0.1"]}})
+   - Configures CORS for the Flask app:
+     * supports_credentials=True: Allows cookies to be sent in cross-origin requests
+     * resources: Defines which routes CORS applies to (r"/*" means all routes)
+     * origins: List of allowed origins that can make requests to this API
+
+9: CODEIGNITER_API_BASE = "http://localhost/Counselign/public/index.php"
+   - Defines the base URL for the CodeIgniter API that this Flask middleware will proxy requests to.
+
+11: (Blank line)
+
+12: def build_codeigniter_cookies(codeigniter_response):
+   - Defines a function to extract cookies from a CodeIgniter response for forwarding to the client.
+
+13:     forwarded_cookies = {}
+   - Initializes an empty dictionary to store cookies to be forwarded.
+
+14: 
+15:     for cookie in codeigniter_response.cookies:
+   - Iterates through each cookie in the CodeIgniter response's cookies collection.
+
+16:         forwarded_cookies[cookie.name] = cookie.value
+   - Adds each cookie to the forwarded_cookies dictionary with name as key and value as value.
+
+17: 
+18:     return forwarded_cookies
+   - Returns the dictionary of cookies to be forwarded to the client.
+
+20: (Blank line)
+
+21: def json_proxy_get(endpoint, params=None):
+   - Defines a function to proxy GET requests to the CodeIgniter API and return JSON responses.
+   - Parameters:
+     * endpoint: The API endpoint to call (will be appended to CODEIGNITER_API_BASE)
+     * params: Optional dictionary of query parameters to send with the request
+
+22:     try:
+   - Begins a try block to catch exceptions.
+
+23:         codeigniter_response = requests.get(
+   - Starts a GET request to the CodeIgniter API.
+
+24:             f"{CODEIGNITER_API_BASE}{endpoint}",
+   - Constructs the full URL by combining the base URL and endpoint.
+
+25:             params=params or {},
+   - Uses the provided params if not None, otherwise uses an empty dictionary.
+
+26:             cookies=request.cookies,
+   - Sends the cookies from the incoming Flask request to the CodeIgniter API.
+
+27:             headers={
+   - Defines custom headers for the request.
+
+28:                 "Accept": "application/json",
+   - Tells the server we want JSON in response.
+
+29:                 "X-Requested-With": "XMLHttpRequest",
+   - Identifies the request as an AJAX request (common convention).
+
+30:             },
+31:             timeout=30,
+   - Sets a 30-second timeout for the request.
+
+32:         )
+   - Ends the requests.get() call.
+
+33: 
+34:         # Check if response is JSON
+   - Comment explaining the next block.
+
+35:         if 'application/json' in codeigniter_response.headers.get('content-type', ''):
+   - Checks if the response Content-Type header indicates JSON.
+
+36:             try:
+   - Begins a try block for JSON parsing.
+
+37:                 payload = codeigniter_response.json()
+   - Attempts to parse the response body as JSON.
+
+38:             except ValueError:
+   - Catches JSON parsing errors.
+
+39:                 # Not valid JSON, return error
+   - Comment explaining the error handling.
+
+40:                 payload = {
+   - Creates an error payload when JSON parsing fails.
+
+41:                     "success": False,
+42:                     "message": "Invalid JSON response from CodeIgniter",
+43:                     "raw_response": codeigniter_response.text[:500]  # First 500 chars
+44:                 }
+   - Includes first 500 characters of the raw response for debugging.
+
+45:         else:
+   - Handles non-JSON responses.
+
+46:             # Not JSON response, return error
+   - Comment explaining the error handling.
+
+47:             payload = {
+   - Creates an error payload for non-JSON responses.
+
+48:                 "success": False,
+49:                 "message": f"Non-JSON response from CodeIgniter (status: {codeigniter_response.status_code})",
+50:                 "content_type": codeigniter_response.headers.get('content-type'),
+51:                 "raw_response": codeigniter_response.text[:500]  # First 500 chars
+52:             }
+   - Includes status code, content type, and first 500 chars of raw response.
+
+53: 
+54:         response = make_response(jsonify(payload), codeigniter_response.status_code)
+   - Creates a Flask response object with JSON payload and same status code as CodeIgniter response.
+
+55: 
+56:         for name, value in build_codeigniter_cookies(codeigniter_response).items():
+   - Iterates through cookies from the CodeIgniter response.
+
+57:             response.set_cookie(name, value, httponly=True, samesite="Lax", domain='localhost')
+   - Sets each cookie in the Flask response with security flags:
+     * httponly=True: Prevents client-side JavaScript access to the cookie
+     * samesite="Lax": Controls when the cookie is sent with cross-site requests
+     * domain='localhost': Sets the cookie domain to localhost
+
+58: 
+59:         return response
+   - Returns the constructed Flask response.
+
+60:     except requests.RequestException as e:
+   - Catches exceptions related to the HTTP request (network errors, timeouts, etc.).
+
+61:         return jsonify({
+62:             "success": False,
+63:             "message": f"Request failed: {str(e)}"
+64:         }), 500
+   - Returns a JSON error response with 500 status code.
+
+65:     except Exception as e:
+   - Catches any other unexpected exceptions.
+
+66:         return jsonify({
+67:             "success": False,
+68:             "message": f"Unexpected error: {str(e)}"
+69:         }), 500
+   - Returns a JSON error response with 500 status code.
+
+70: 
+71: (Blank line)
+
+72: def json_proxy_post(endpoint, data=None):
+   - Defines a function to proxy POST requests to the CodeIgniter API and return JSON responses.
+   - Parameters:
+     * endpoint: The API endpoint to call
+     * data: Optional dictionary of data to send as JSON in the request body
+
+73:     try:
+   - Begins a try block to catch exceptions.
+
+74:         codeigniter_response = requests.post(
+   - Starts a POST request to the CodeIgniter API.
+
+75:             f"{CODEIGNITER_API_BASE}{endpoint}",
+   - Constructs the full URL.
+
+76:             json=data or {},
+   - Sends the data as JSON in the request body (empty dict if data is None).
+
+77:             cookies=request.cookies,
+   - Sends the cookies from the incoming Flask request.
+
+78:             headers={
+   - Defines custom headers for the request.
+
+79:                 "Accept": "application/json",
+   - Tells the server we want JSON in response.
+
+80:                 "Content-Type": "application/json",
+   - Tells the server we're sending JSON in the request body.
+
+81:                 "X-Requested-With": "XMLHttpRequest",
+   - Identifies the request as an AJAX request.
+
+82:             },
+83:             timeout=30,
+   - Sets a 30-second timeout.
+
+84:         )
+   - Ends the requests.post() call.
+
+85: 
+86:         # Check if response is JSON
+   - Comment explaining the next block.
+
+87:         if 'application/json' in codeigniter_response.headers.get('content-type', ''):
+   - Checks if the response Content-Type header indicates JSON.
+
+88:             try:
+   - Begins a try block for JSON parsing.
+
+89:                 payload = codeigniter_response.json()
+   - Attempts to parse the response body as JSON.
+
+90:             except ValueError:
+   - Catches JSON parsing errors.
+
+91:                 # Not valid JSON, return error
+   - Comment explaining the error handling.
+
+92:                 payload = {
+   - Creates an error payload when JSON parsing fails.
+
+93:                     "success": False,
+94:                     "message": "Invalid JSON response from CodeIgniter",
+95:                     "raw_response": codeigniter_response.text[:500]
+96:                 }
+   - Includes first 500 characters of the raw response.
+
+97:         else:
+   - Handles non-JSON responses.
+
+98:             # Not JSON response, return error
+   - Comment explaining the error handling.
+
+99:                 payload = {
+   - Creates an error payload for non-JSON responses.
+
+100:                     "success": False,
+101:                     "message": f"Non-JSON response from CodeIgniter (status: {codeigniter_response.status_code})",
+102:                     "content_type": codeigniter_response.headers.get('content-type'),
+103:                     "raw_response": codeigniter_response.text[:500]
+104:                 }
+   - Includes status code, content type, and first 500 chars of raw response.
+
+105: 
+106:         response = make_response(jsonify(payload), codeigniter_response.status_code)
+   - Creates a Flask response object with JSON payload and same status code as CodeIgniter response.
+
+107: 
+108:         for name, value in build_codeigniter_cookies(codeigniter_response).items():
+   - Iterates through cookies from the CodeIgniter response.
+
+109:             response.set_cookie(name, value, httponly=True, samesite="Lax", domain='localhost')
+   - Sets each cookie in the Flask response with security flags.
+
+110: 
+111:         return response
+   - Returns the constructed Flask response.
+
+112:     except requests.RequestException as e:
+   - Catches exceptions related to the HTTP request.
+
+113:         return jsonify({
+114:             "success": False,
+115:             "message": f"Request failed: {str(e)}"
+116:         }), 500
+   - Returns a JSON error response with 500 status code.
+
+117:     except Exception as e:
+   - Catches any other unexpected exceptions.
+
+118:         return jsonify({
+119:             "success": False,
+120:             "message": f"Unexpected error: {str(e)}"
+121:         }), 500
+   - Returns a JSON error response with 500 status code.
+
+122: 
+123: (Blank line)
+
+124: @app.get("/health")
+   - Defines a route for GET requests to /health using Flask's decorator syntax.
+
+125: def health_check():
+   - Defines the function that handles requests to /health.
+
+126:     return jsonify(
+   - Returns a JSON response.
+
+127:         {
+128:             "status": "ok",
+129:             "service": "flask-middleware",
+130:             "codeigniter_api": CODEIGNITER_API_BASE,
+131:         }
+132:     )
+   - Returns a JSON object with status, service name, and CodeIgniter API base URL.
+
+133: 
+134: (Blank line)
+
+135: @app.route("/health", methods=["OPTIONS"])
+   - Defines a route for OPTIONS requests to /health (used for CORS preflight).
+
+136: def health_check_options():
+   - Defines the function that handles OPTIONS requests to /health.
+
+137:     return ("", 204)
+   - Returns an empty response with 204 No Content status (standard for successful OPTIONS requests).
+
+138: 
+139: (Blank line)
+
+140: @app.get("/api/admin/dashboard/data")
+   - Defines a route for GET requests to /api/admin/dashboard/data.
+
+141: def admin_dashboard_data():
+   - Defines the function that handles requests to this endpoint.
+
+142:     return json_proxy_get("/admin/dashboard/data")
+   - Calls the json_proxy_get function to proxy the request to CodeIgniter's /admin/dashboard/data endpoint.
+
+143: 
+144: (Blank line)
+
+145: @app.get("/api/admin/message/operations")
+   - Defines a route for GET requests to /api/admin/message/operations.
+
+146: def admin_message_operations():
+   - Defines the function that handles requests to this endpoint.
+
+147:     action = request.args.get("action")
+   - Gets the 'action' query parameter from the incoming request.
+
+148:     return json_proxy_get("/admin/message/operations", {"action": action})
+   - Calls json_proxy_get to proxy the request to CodeIgniter's /admin/message/operations endpoint, passing the action parameter.
+
+149: 
+150: (Blank line)
+
+151: @app.post("/api/admin/update_appointment")
+   - Defines a route for POST requests to /api/admin/update_appointment.
+
+152: def admin_update_appointment():
+   - Defines the function that handles requests to this endpoint.
+
+153:     data = request.get_json()
+   - Gets the JSON data from the incoming request body.
+
+154:     return json_proxy_post("/admin/update_appointment", data)
+   - Calls json_proxy_post to proxy the request to CodeIgniter's /admin/update_appointment endpoint, passing the JSON data.
+
+155: 
+156: (Blank line)
+
+157: @app.get("/api/admin/appointments")
+   - Defines a route for GET requests to /api/admin/appointments.
+
+158: def admin_appointments():
+   - Defines the function that handles requests to this endpoint.
+
+159:     time_range = request.args.get("timeRange", "weekly")
+   - Gets the 'timeRange' query parameter from the incoming request, defaulting to "weekly" if not provided.
+
+160:     return json_proxy_get(
+   - Calls json_proxy_get to proxy the request.
+
+161:         "/admin/appointments/get_all_appointments",
+   - Proxies to CodeIgniter's /admin/appointments/get_all_appointments endpoint.
+
+162:         {"timeRange": time_range},
+   - Passes the time_range parameter.
+
+163:     )
+   - Ends the json_proxy_get call.
+
+164: 
+165: (Blank line)
+
+166: @app.get("/api/admin/session-check")
+   - Defines a route for GET requests to /api/admin/session-check.
+
+167: def admin_session_check():
+   - Defines the function that handles requests to this endpoint.
+
+168:     return json_proxy_get("/admin/session/check")
+   - Calls json_proxy_get to proxy the request to CodeIgniter's /admin/session/check endpoint.
+
+169: 
+170: (Blank line)
+
+171: # OPTIONS handlers for CORS
+   - Comment indicating the following functions handle CORS preflight requests.
+
+172: @app.route("/api/admin/dashboard/data", methods=["OPTIONS"])
+   - Defines a route for OPTIONS requests to /api/admin/dashboard/data.
+
+173: def admin_dashboard_data_options():
+   - Defines the function that handles OPTIONS requests to this endpoint.
+
+174:     return ("", 204)
+   - Returns an empty response with 204 No Content status.
+
+175: 
+176: (Blank line)
+
+177: @app.route("/api/admin/message/operations", methods=["OPTIONS"])
+   - Defines a route for OPTIONS requests to /api/admin/message/operations.
+
+178: def admin_message_operations_options():
+   - Defines the function that handles OPTIONS requests to this endpoint.
+
+179:     return ("", 204)
+   - Returns an empty response with 204 No Content status.
+
+180: 
+181: (Blank line)
+
+182: @app.route("/api/admin/update_appointment", methods=["OPTIONS"])
+   - Defines a route for OPTIONS requests to /api/admin/update_appointment.
+
+183: def admin_update_appointment_options():
+   - Defines the function that handles OPTIONS requests to this endpoint.
+
+184:     return ("", 204)
+   - Returns an empty response with 204 No Content status.
+
+185: 
+186: (Blank line)
+
+187: @app.route("/api/admin/appointments", methods=["OPTIONS"])
+   - Defines a route for OPTIONS requests to /api/admin/appointments.
+
+188: def admin_appointments_options():
+   - Defines the function that handles OPTIONS requests to this endpoint.
+
+189:     return ("", 204)
+   - Returns an empty response with 204 No Content status.
+
+190: 
+191: (Blank line)
+
+192: @app.route("/api/admin/session-check", methods=["OPTIONS"])
+   - Defines a route for OPTIONS requests to /api/admin/session-check.
+
+193: def admin_session_check_options():
+   - Defines the function that handles OPTIONS requests to this endpoint.
+
+194:     return ("", 204)
+   - Returns an empty response with 204 No Content status.
+
+195: 
+196: (Blank line)
+
+197: if __name__ == "__main__":
+   - Checks if this script is being run directly (not imported as a module).
+
+198:     app.run(host="127.0.0.1", port=5000, debug=True)
+   - Starts the Flask development server:
+     * host="127.0.0.1": Binds to localhost only (not accessible from other machines)
+     * port=5000: Uses port 5000
+     * debug=True: Enables debug mode (auto-reload on code changes, detailed error pages)

@@ -1028,4 +1028,143 @@ class AppointmentModel extends BaseModel
         log_message('info', "Counselor availability released for appointment {$appointmentId}");
         return true;
     }
+
+    // ========================================
+    // TRIGGER-SPECIFIC QUERY METHODS
+    // These methods replicate MySQL trigger logic
+    // ========================================
+
+    /**
+     * TRIGGER 1: BEFORE INSERT ON appointments
+     * Check if counselor already has an appointment at this time
+     * 
+     * Original trigger logic:
+     * - Check appointments table for records where:
+     *   - counselor_preference = NEW.counselor_preference
+     *   - preferred_date = NEW.preferred_date
+     *   - preferred_time = NEW.preferred_time
+     *   - status IN ('pending', 'approved')
+     *   - counselor_preference != 'No preference'
+     * 
+     * @param string $counselorPreference
+     * @param string $preferredDate
+     * @param string $preferredTime
+     * @return int Count of conflicting appointments
+     */
+    public function countCounselorConflictsForInsert(string $counselorPreference, string $preferredDate, string $preferredTime): int
+    {
+        return $this->where('counselor_preference', $counselorPreference)
+                    ->where('preferred_date', $preferredDate)
+                    ->where('preferred_time', $preferredTime)
+                    ->whereIn('status', ['pending', 'approved'])
+                    ->where('counselor_preference !=', 'No preference')
+                    ->countAllResults();
+    }
+
+    /**
+     * TRIGGER 2: BEFORE UPDATE ON appointments - Individual Consultation Check
+     * Check if time slot is already booked for Individual Consultation
+     * 
+     * Original trigger logic:
+     * - Check appointments table where:
+     *   - counselor_preference = NEW.counselor_preference
+     *   - preferred_date = NEW.preferred_date
+     *   - preferred_time = NEW.preferred_time
+     *   - status IN ('pending', 'approved')
+     *   - counselor_preference != 'No preference'
+     *   - id != current appointment id
+     * 
+     * @param int $excludeAppointmentId Current appointment ID to exclude
+     * @param string $counselorPreference
+     * @param string $preferredDate
+     * @param string $preferredTime
+     * @return int Count of conflicting appointments
+     */
+    public function countIndividualConsultationConflicts(int $excludeAppointmentId, string $counselorPreference, string $preferredDate, string $preferredTime): int
+    {
+        return $this->where('counselor_preference', $counselorPreference)
+                    ->where('preferred_date', $preferredDate)
+                    ->where('preferred_time', $preferredTime)
+                    ->whereIn('status', ['pending', 'approved'])
+                    ->where('counselor_preference !=', 'No preference')
+                    ->where('id !=', $excludeAppointmentId)
+                    ->countAllResults();
+    }
+
+    /**
+     * TRIGGER 2: BEFORE UPDATE ON appointments - Group Consultation Check (Individual Conflict)
+     * Check if time slot is already booked for Individual Consultation when trying to book Group
+     * 
+     * Original trigger logic:
+     * - Check for existing Individual Consultation where:
+     *   - counselor_preference = NEW.counselor_preference
+     *   - preferred_date = NEW.preferred_date
+     *   - preferred_time = NEW.preferred_time
+     *   - consultation_type = 'Individual Consultation'
+     *   - status IN ('pending', 'approved')
+     *   - counselor_preference != 'No preference'
+     *   - id != current appointment id
+     * 
+     * @param int $excludeAppointmentId Current appointment ID to exclude
+     * @param string $counselorPreference
+     * @param string $preferredDate
+     * @param string $preferredTime
+     * @return int Count of conflicting individual consultations
+     */
+    public function countIndividualConsultationConflictsForGroup(int $excludeAppointmentId, string $counselorPreference, string $preferredDate, string $preferredTime): int
+    {
+        return $this->where('counselor_preference', $counselorPreference)
+                    ->where('preferred_date', $preferredDate)
+                    ->where('preferred_time', $preferredTime)
+                    ->where('consultation_type', 'Individual Consultation')
+                    ->whereIn('status', ['pending', 'approved'])
+                    ->where('counselor_preference !=', 'No preference')
+                    ->where('id !=', $excludeAppointmentId)
+                    ->countAllResults();
+    }
+
+    /**
+     * TRIGGER 2: BEFORE UPDATE ON appointments - Group Consultation Check (Group Count)
+     * Count existing Group Consultations at this time slot
+     * 
+     * Original trigger logic:
+     * - Count existing Group Consultations where:
+     *   - counselor_preference = NEW.counselor_preference
+     *   - preferred_date = NEW.preferred_date
+     *   - preferred_time = NEW.preferred_time
+     *   - consultation_type = 'Group Consultation'
+     *   - status IN ('pending', 'approved')
+     *   - counselor_preference != 'No preference'
+     *   - id != current appointment id
+     * 
+     * @param int $excludeAppointmentId Current appointment ID to exclude
+     * @param string $counselorPreference
+     * @param string $preferredDate
+     * @param string $preferredTime
+     * @return int Count of existing group consultations
+     */
+    public function countGroupConsultations(int $excludeAppointmentId, string $counselorPreference, string $preferredDate, string $preferredTime): int
+    {
+        return $this->where('counselor_preference', $counselorPreference)
+                    ->where('preferred_date', $preferredDate)
+                    ->where('preferred_time', $preferredTime)
+                    ->where('consultation_type', 'Group Consultation')
+                    ->whereIn('status', ['pending', 'approved'])
+                    ->where('counselor_preference !=', 'No preference')
+                    ->where('id !=', $excludeAppointmentId)
+                    ->countAllResults();
+    }
+
+    /**
+     * Get current appointment data for comparison (used in trigger update logic)
+     * 
+     * @param int $appointmentId
+     * @return array|null
+     */
+    public function getAppointmentForUpdate(int $appointmentId): ?array
+    {
+        return $this->select('id, counselor_preference, preferred_date, preferred_time, consultation_type')
+                    ->where('id', $appointmentId)
+                    ->first();
+    }
 }

@@ -1,6 +1,33 @@
+/**
+ * Basic email format check (any domain) — used by Contact Us and counselor info.
+ */
+function isValidEmail(email) {
+    const value = (email || '').trim();
+    if (!value || /\s/.test(value) || value.includes('..')) {
+        return false;
+    }
+    const atIndex = value.indexOf('@');
+    if (atIndex <= 0 || value.indexOf('@', atIndex + 1) !== -1) {
+        return false;
+    }
+    const local = value.slice(0, atIndex);
+    const domain = value.slice(atIndex + 1);
+    if (local.startsWith('.') || local.endsWith('.')) {
+        return false;
+    }
+    if (!domain.includes('.') || domain.startsWith('.') || domain.endsWith('.')) {
+        return false;
+    }
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getBaseUrl() {
+    const base = window.BASE_URL || '/';
+    return base.endsWith('/') ? base : base + '/';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-    const adminPasswordModal = new bootstrap.Modal(document.getElementById('adminPasswordModal'));
     const signUpModal = new bootstrap.Modal(document.getElementById('signUpModal'));
     const forgotPasswordModal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
     const termsModal = new bootstrap.Modal(document.getElementById('termsModal'));
@@ -12,12 +39,52 @@ document.addEventListener('DOMContentLoaded', function() {
     })();
     const urlParams = new URLSearchParams(window.location.search);
     const openParam = urlParams.get('open');
+
+    function animateTrigger(elementId) {
+        const trigger = document.getElementById(elementId);
+        if (!trigger) return;
+        trigger.classList.remove('lv-modal-trigger-pop');
+        void trigger.offsetWidth;
+        trigger.classList.add('lv-modal-trigger-pop');
+    }
+
+    function wireModalOpenAnimation(modalId) {
+        const el = document.getElementById(modalId);
+        if (!el) return;
+        el.addEventListener('show.bs.modal', function () {
+            const dialog = el.querySelector('.modal-dialog');
+            if (!dialog) return;
+            dialog.style.animation = 'none';
+            void dialog.offsetWidth;
+            dialog.style.animation = '';
+        });
+    }
+
+    wireModalOpenAnimation('loginModal');
+    wireModalOpenAnimation('signUpModal');
+    wireModalOpenAnimation('contactModal');
     
-    // Contact modal event listener
-    document.getElementById('openContactModal').addEventListener('click', function(e) {
-        e.preventDefault();
+    function openContactModalHandler(e) {
+        if (e) {
+            e.preventDefault();
+        }
+        animateTrigger('openContactModal');
         contactModal.show();
-    });
+    }
+
+    const openContactModalEl = document.getElementById('openContactModal');
+    if (openContactModalEl) {
+        openContactModalEl.addEventListener('click', openContactModalHandler);
+        const contactNavLink = openContactModalEl.querySelector('a');
+        if (contactNavLink) {
+            contactNavLink.addEventListener('click', openContactModalHandler);
+        }
+    }
+
+    const heroContactBtn = document.getElementById('heroContactBtn');
+    if (heroContactBtn) {
+        heroContactBtn.addEventListener('click', openContactModalHandler);
+    }
 
     // --- Counselor Info submission ---
     (function initCounselorInfoFlow(){
@@ -121,95 +188,137 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     })();
 
-    // Contact form submission
-    document.getElementById('contactSubmitBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // Reset error messages
-        document.getElementById('contactWarning').classList.add('d-none');
-        document.getElementById('contactNameError').classList.add('d-none');
-        document.getElementById('contactEmailError').classList.add('d-none');
-        document.getElementById('contactSubjectError').classList.add('d-none');
-        document.getElementById('contactMessageError').classList.add('d-none');
-        
-        // Get form data
-        const name = document.getElementById('contactName').value.trim();
-        const email = document.getElementById('contactEmail').value.trim();
-        const subject = document.getElementById('contactSubject').value.trim();
-        const message = document.getElementById('contactMessage').value.trim();
-        
-        // Basic validation
-        let isValid = true;
-        
-        if (!name) {
-            document.getElementById('contactNameError').classList.remove('d-none');
-            document.getElementById('contactWarning').classList.remove('d-none');
-            isValid = false;
+    function submitContactForm(e) {
+        if (e) {
+            e.preventDefault();
         }
-        
-        if (!email || !isValidEmail(email)) {
-            document.getElementById('contactEmailError').classList.remove('d-none');
-            document.getElementById('contactWarning').classList.remove('d-none');
-            isValid = false;
-        }
-        
-        if (!subject) {
-            document.getElementById('contactSubjectError').classList.remove('d-none');
-            document.getElementById('contactWarning').classList.remove('d-none');
-            isValid = false;
-        }
-        
-        if (!message) {
-            document.getElementById('contactMessageError').classList.remove('d-none');
-            document.getElementById('contactWarning').classList.remove('d-none');
-            isValid = false;
-        }
-        
-        if (isValid) {
-            const submitBtn = document.getElementById('contactSubmitBtn');
-            const originalBtnText = submitBtn.innerHTML;
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
-            
-            const formData = new FormData();
-            formData.append('name', name);
-            formData.append('email', email);
-            formData.append('subject', subject);
-            formData.append('message', message);
-            formData.append(window.CSRF_TOKEN_NAME, document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
-            fetch(window.BASE_URL + 'email/sendContactEmail', {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-                
-                if (data.status === 'success') {
-                    openConfirmationModal('Thank you for your message! We will get back to you soon.');
-                    document.getElementById('contactName').value = '';
-                    document.getElementById('contactEmail').value = '';
-                    document.getElementById('contactSubject').value = '';
-                    document.getElementById('contactMessage').value = '';
-                    contactModal.hide();
-                } else {
-                    openConfirmationModal(data.message || 'Failed to send message. Please try again later.');
-                }
-            })
-            .catch(error => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-                console.error('Error:', error);
-                openConfirmationModal('An error occurred. Please try again later.');
-            });
+        const contactWarning = document.getElementById('contactWarning');
+        const contactNameError = document.getElementById('contactNameError');
+        const contactEmailError = document.getElementById('contactEmailError');
+        const contactSubjectError = document.getElementById('contactSubjectError');
+        const contactMessageError = document.getElementById('contactMessageError');
+
+        if (contactWarning) contactWarning.classList.add('d-none');
+        [contactNameError, contactEmailError, contactSubjectError, contactMessageError].forEach(function (el) {
+            if (el) el.classList.add('d-none');
+        });
+
+        const name = (document.getElementById('contactName')?.value || '').trim();
+        const email = (document.getElementById('contactEmail')?.value || '').trim();
+        const subject = (document.getElementById('contactSubject')?.value || '').trim();
+        const message = (document.getElementById('contactMessage')?.value || '').trim();
+
+        let isValid = true;
+
+        if (!name) {
+            contactNameError?.classList.remove('d-none');
+            contactWarning?.classList.remove('d-none');
+            isValid = false;
         }
-    });
+
+        if (!email || !isValidEmail(email)) {
+            contactEmailError?.classList.remove('d-none');
+            contactWarning?.classList.remove('d-none');
+            isValid = false;
+        }
+
+        if (!subject) {
+            contactSubjectError?.classList.remove('d-none');
+            contactWarning?.classList.remove('d-none');
+            isValid = false;
+        }
+
+        if (!message) {
+            contactMessageError?.classList.remove('d-none');
+            contactWarning?.classList.remove('d-none');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            return;
+        }
+
+        const submitBtn = document.getElementById('contactSubmitBtn');
+        if (!submitBtn) {
+            return;
+        }
+
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('email', email);
+        formData.append('subject', subject);
+        formData.append('message', message);
+
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (window.CSRF_TOKEN_NAME && csrfMeta) {
+            formData.append(window.CSRF_TOKEN_NAME, csrfMeta.getAttribute('content'));
+        }
+
+        fetch(getBaseUrl() + 'email/sendContactEmail', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(function (response) {
+            return response.json().catch(function () {
+                throw new Error('Invalid server response');
+            }).then(function (data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function (result) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+
+            if (result.data.status === 'success') {
+                openConfirmationModal('Thank you for your message! We will get back to you soon.');
+                const nameEl = document.getElementById('contactName');
+                const emailEl = document.getElementById('contactEmail');
+                const subjectEl = document.getElementById('contactSubject');
+                const messageEl = document.getElementById('contactMessage');
+                if (nameEl) nameEl.value = '';
+                if (emailEl) emailEl.value = '';
+                if (subjectEl) subjectEl.value = '';
+                if (messageEl) messageEl.value = '';
+                contactModal.hide();
+            } else {
+                openConfirmationModal(result.data.message || 'Failed to send message. Please try again later.');
+            }
+        })
+        .catch(function (error) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            console.error('Contact form error:', error);
+            openConfirmationModal('An error occurred. Please try again later.');
+        });
+    }
+
+    const contactSubmitBtn = document.getElementById('contactSubmitBtn');
+    if (contactSubmitBtn) {
+        contactSubmitBtn.addEventListener('click', submitContactForm);
+    }
+
+    const contactModalEl = document.getElementById('contactModal');
+    if (contactModalEl) {
+        contactModalEl.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                const target = event.target;
+                if (target && target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                event.preventDefault();
+                submitContactForm();
+            }
+        });
+    }
 
     // Add Enter key functionality for login modal
     document.getElementById('loginModal').addEventListener('keyup', function(event) {
@@ -235,10 +344,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Open modals
     document.getElementById('openLoginModal').addEventListener('click', function() {
+        animateTrigger('openLoginModal');
         loginModal.show();
     });
     
     document.getElementById('openSignUpModal').addEventListener('click', function() {
+        animateTrigger('openSignUpModal');
         signUpModal.show();
     });
     
@@ -427,7 +538,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // --- Regular User/Counselor Login --- 
     const loginIdentifierInput = document.getElementById('loginIdentifierInput');
-    const openAdminModalBtn = document.getElementById('openAdminModalBtn');
 
     // Login form submission
     document.getElementById('loginBtn').addEventListener('click', function(e) {
@@ -447,7 +557,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let isValid = true;
         
         if (!identifier) {
-            document.getElementById('loginIdentifierError').textContent = "Please enter your User ID or Email.";
+            document.getElementById('loginIdentifierError').textContent = "Please enter your email.";
+            document.getElementById('loginIdentifierError').classList.remove('d-none');
+            document.getElementById('loginWarning').classList.remove('d-none');
+            isValid = false;
+        } else if (!isAllowedEmail(identifier)) {
+            document.getElementById('loginIdentifierError').textContent = "Only gmail.com, yahoo.com, outlook.com, and edu.ph emails are allowed.";
             document.getElementById('loginIdentifierError').classList.remove('d-none');
             document.getElementById('loginWarning').classList.remove('d-none');
             isValid = false;
@@ -470,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('identifier', identifier);
             formData.append('password', password);
             
-            fetch(window.BASE_URL + 'index.php/auth/login', {
+            fetch(window.BASE_URL + 'auth/login', {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -510,106 +625,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- Admin Login ---
-    if (openAdminModalBtn) {
-        openAdminModalBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const adminIdInput = document.getElementById('adminIdentifierInput');
-            if (adminIdInput) adminIdInput.value = loginIdentifierInput.value;
-            try { loginModal.hide(); } catch (e) {}
-            setTimeout(() => adminPasswordModal.show(), 300);
-        });
-    }
+    // Email validator (allowed domains only)
+    // Allowed domains: gmail.com, yahoo.com, outlook.com, edu.ph
+    function isAllowedEmail(email) {
+        const value = (email || '').trim();
+        if (!value) return false;
+        if (/\s/.test(value)) return false;
+        if (value.includes('..')) return false;
 
-    // Toggle password visibility in admin modal
-    document.getElementById('toggleAdminPassword').addEventListener('click', function() {
-        togglePasswordWithIcon('adminPasswordInput', 'toggleAdminPassword', 'eyeIconAdmin');
-    });
+        const atIndex = value.indexOf('@');
+        if (atIndex <= 0) return false; // no name before @
+        if (value.indexOf('@', atIndex + 1) !== -1) return false; // multiple @
 
-    // Admin modal: submit
-    document.getElementById('adminLoginBtn').addEventListener('click', function(e) {
-        e.preventDefault();
+        const local = value.slice(0, atIndex);
+        const domain = value.slice(atIndex + 1).toLowerCase();
 
-        document.getElementById('adminLoginWarning').classList.add('d-none');
-        document.getElementById('adminIdentifierError').classList.add('d-none');
-        document.getElementById('adminPasswordError').classList.add('d-none');
-        document.getElementById('adminInvalidError').classList.add('d-none');
+        if (local.startsWith('.') || local.endsWith('.')) return false;
+        if (!/^[a-zA-Z0-9._%+-]+$/.test(local)) return false;
+        if (local.includes('..')) return false;
 
-        const adminIdentifier = document.getElementById('adminIdentifierInput').value.trim();
-        const adminPassword = document.getElementById('adminPasswordInput').value.trim();
+        const allowed = ['gmail.com', 'yahoo.com', 'outlook.com', 'edu.ph'];
+        if (!allowed.includes(domain)) return false;
+        if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain)) return false;
 
-        let adminValid = true;
-        if (!adminIdentifier) {
-            document.getElementById('adminIdentifierError').classList.remove('d-none');
-            document.getElementById('adminLoginWarning').classList.remove('d-none');
-            adminValid = false;
-        }
-        if (!adminPassword) {
-            document.getElementById('adminPasswordError').classList.remove('d-none');
-            document.getElementById('adminLoginWarning').classList.remove('d-none');
-            adminValid = false;
-        }
-
-        if (!adminValid) return;
-
-        const btn = document.getElementById('adminLoginBtn');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
-
-        const formData = new FormData();
-        formData.append('identifier', adminIdentifier);
-        formData.append('password', adminPassword);
-
-        fetch((window.BASE_URL || '/') + 'index.php/auth/verify-admin', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            if (data.status === 'success') {
-                try { adminPasswordModal.hide(); } catch (e) {}
-                try { loginModal.hide(); } catch (e) {}
-                window.location.href = data.redirect.startsWith('http') || data.redirect.startsWith('/') ? data.redirect : (window.BASE_URL || '/') + data.redirect;
-            } else if (data.status === 'unverified') {
-                adminPasswordModal.hide();
-                setTimeout(() => {
-                    openConfirmationModal(data.message);
-                    if (data.redirect) {
-                        try { verificationModalInstance.show(); } catch (e) {}
-                    }
-                }, 300);
-            } else {
-                document.getElementById('adminInvalidError').textContent = data.message || 'Invalid Admin credentials';
-                document.getElementById('adminInvalidError').classList.remove('d-none');
-                document.getElementById('adminLoginWarning').classList.remove('d-none');
-            }
-        })
-        .catch(() => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            document.getElementById('adminInvalidError').textContent = 'An error occurred. Please try again.';
-            document.getElementById('adminInvalidError').classList.remove('d-none');
-            document.getElementById('adminLoginWarning').classList.remove('d-none');
-        });
-    });
-
-    // Admin modal: Back to Login
-    document.getElementById('adminBackToLoginBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        try { adminPasswordModal.hide(); } catch (e) {}
-        setTimeout(() => loginModal.show(), 300);
-    });
-
-    // Helper function to validate email
-    function isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+        return true;
     }
     
     const signUpUserIdInput = document.getElementById('signUpUserIdInput');
@@ -669,7 +708,8 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
         
-        if (!email || !isValidEmail(email)) {
+        if (!email || !isAllowedEmail(email)) {
+            document.getElementById('signUpEmailError').textContent = "*Please enter a valid email (gmail.com, yahoo.com, outlook.com, edu.ph only)";
             document.getElementById('signUpEmailError').classList.remove('d-none');
             document.getElementById('signUpWarning').classList.remove('d-none');
             isValid = false;
@@ -715,7 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('username', username);
             formData.append(window.CSRF_TOKEN_NAME, document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
             
-            fetch(window.BASE_URL + 'index.php/auth/signup', {
+            fetch(window.BASE_URL + 'auth/signup', {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -820,8 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function isValidEmailOrUserId(input) {
             const trimmedInput = input.trim();
             if (!trimmedInput) return false;
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (emailRegex.test(trimmedInput)) return true;
+            if (isAllowedEmail(trimmedInput)) return true;
             // Accept 1-10 digit numeric user IDs (student) OR >=3 alphanumeric (others)
             if (/^\d{1,10}$/.test(trimmedInput)) return true;
             if (/^[a-zA-Z0-9]{3,}$/.test(trimmedInput)) return true;
@@ -1070,6 +1109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.getElementById('openLoginModalDrawer').addEventListener('click', function() {
+        animateTrigger('openLoginModalDrawer');
         closeDrawer();
         setTimeout(() => {
             loginModal.show();
@@ -1077,18 +1117,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('openSignUpModalDrawer').addEventListener('click', function() {
+        animateTrigger('openSignUpModalDrawer');
         closeDrawer();
         setTimeout(() => {
             signUpModal.show();
         }, 300);
     });
 
-    document.getElementById('openContactModalDrawer').addEventListener('click', function() {
-        closeDrawer();
-        setTimeout(() => {
-            contactModal.show();
-        }, 300);
-    });
+    const openContactModalDrawer = document.getElementById('openContactModalDrawer');
+    if (openContactModalDrawer) {
+        openContactModalDrawer.addEventListener('click', function (e) {
+            e.preventDefault();
+            animateTrigger('openContactModalDrawer');
+            closeDrawer();
+            setTimeout(function () {
+                contactModal.show();
+            }, 300);
+        });
+    }
 
     // Add event listener for signup role select to change user ID input placeholder
     document.getElementById('signUpRole').addEventListener('change', function() {

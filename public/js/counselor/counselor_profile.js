@@ -1,19 +1,72 @@
-// Resolve image URL: if already absolute or starts with '/', return as-is; else prepend BASE_URL
+window.ACCOUNT_PROFILE_CONFIG = {
+    rolePrefix: 'counselor',
+    updateUrl: 'counselor/profile/update',
+    pictureUrl: 'counselor/profile/picture',
+    loadUrl: 'counselor/profile/get',
+    passwordUrl: 'update-password',
+    storageKey: 'counselor_profile_picture',
+    emailPreviewId: 'counselor-email-preview',
+    usernamePreviewId: 'counselor-username-preview',
+    displayNameId: 'counselor-display-name',
+    accountIdId: 'display-userid',
+    redirectOnAuthFail: 'counselor/dashboard',
+    notify: function (message, type) {
+        if (typeof openAlertModal === 'function') {
+            openAlertModal(message, type === 'error' ? 'error' : (type === 'success' ? 'success' : 'warning'));
+        } else if (window.AccountProfileActions) {
+            window.AccountProfileActions.showNotification(message, type);
+        }
+    },
+    onFieldUpdated: function (field, value) {
+        const username = field === 'username'
+            ? value
+            : (document.querySelector('[data-field="username"] .acct-field-value')?.textContent || '');
+        const email = field === 'email'
+            ? value
+            : (document.querySelector('[data-field="email"] .acct-field-value')?.textContent || '');
+        const displayName = document.getElementById('counselor-display-name')?.textContent || username;
+        syncCounselorAccountDisplay(username, email, displayName);
+        if (field === 'email') {
+            const piEmail = document.getElementById('pi-email');
+            const upiEmail = document.getElementById('upi-email');
+            if (piEmail) piEmail.value = value;
+            if (upiEmail) upiEmail.value = value;
+        }
+    },
+    onProfileDataLoaded: function (data) {
+        const c = data.counselor || null;
+        const displayName = data.full_name || data.name || (c && c.name) || data.username || 'Counselor';
+        syncCounselorAccountDisplay(data.username || '', data.email || '', displayName);
+        populateCounselorProfessionalDetails(data);
+    },
+};
+
 function resolveImageUrl(path) {
+    if (window.AccountProfileActions && window.AccountProfileActions.resolveImageUrl) {
+        return window.AccountProfileActions.resolveImageUrl(path);
+    }
     if (!path) return (window.BASE_URL || '/') + 'Photos/profile.png';
     const trimmed = String(path).trim();
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    if (trimmed.startsWith('/')) return trimmed; 
-    return (window.BASE_URL || '/') + trimmed;
+    if (trimmed.startsWith('/')) return trimmed;
+    return (window.BASE_URL || '/') + trimmed.replace(/^\//, '');
 }
 
-// Function to change profile picture
-let images = ["default.jpg", "image2.jpg", "image3.jpg"];
-let currentIndex = 0;
+function setAcctPreview(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
 
-function changeImage() {
-    currentIndex = (currentIndex + 1) % images.length;
-    document.getElementById("profile-img").src = images[currentIndex];
+function syncCounselorAccountDisplay(username, email, counselorName) {
+    setAcctPreview('acct-username-value', username);
+    setAcctPreview('acct-email-value', email);
+    setAcctPreview('counselor-username-preview', username);
+    setAcctPreview('counselor-email-preview', email);
+    setAcctPreview('counselor-display-name', counselorName || username);
+    const du = document.getElementById('display-username');
+    const de = document.getElementById('display-email');
+    if (du) du.value = username;
+    if (de) de.value = email;
 }
 
 // Function to handle logout action
@@ -28,260 +81,75 @@ function handleLogout() {
     }
 }
 
-// Function to validate email format
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-}
-
-// Function to save profile changes
-function saveProfileChanges() {
-    // Get the values from the modal inputs
-    const newUsername = document.getElementById('update-username').value.trim();
-    const newEmail = document.getElementById('update-email').value.trim();
-
-    SecureLogger.info('Saving profile changes:', { newUsername, newEmail });
-
-    // Validate inputs
-    if (!newUsername) {
-        openAlertModal('Please enter a username', 'warning');
-        return;
+function populateCounselorProfessionalDetails(data) {
+    const c = data.counselor || null;
+    const setVal = (id, v, defaultValue = 'N/A') => {
+        const el = document.getElementById(id);
+        if (el) el.value = v || defaultValue;
+    };
+    const setValInput = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.value = v || '';
+    };
+    setValInput('pi-counselor-id-input', data.user_id || '');
+    setVal('pi-fullname', c ? c.name : '', 'N/A');
+    setVal('pi-birthdate', c ? (c.birthdate || '') : '', '');
+    setVal('pi-address', c ? c.address : '', 'N/A');
+    setVal('pi-degree', c ? c.degree : '', 'N/A');
+    setVal('pi-email', data.email || (c ? c.email : '') || '', 'N/A');
+    const specializationDisplayEl = document.getElementById('pi-specialization');
+    if (specializationDisplayEl) {
+        setVal('pi-specialization', c ? c.specialization : '', 'N/A');
     }
+    setVal('pi-contact', c ? c.contact_number : '', 'N/A');
+    setVal('pi-sex', c ? c.sex : '', '');
+    setVal('pi-civil', c ? c.civil_status : '', '');
 
-    if (!newEmail) {
-        openAlertModal('Please enter an email address', 'warning');
-        return;
+    const setModal = (id, v, defaultValue = 'N/A') => {
+        const el = document.getElementById(id);
+        if (el) el.value = v || defaultValue;
+    };
+    (function () {
+        const storedName = (c && c.name) ? c.name.trim() : '';
+        const parts = storedName ? storedName.split(/\s+/) : [];
+        let fn = '', ln = '', mi = '';
+        if (parts.length === 1) { fn = parts[0]; }
+        else if (parts.length === 2) { fn = parts[0]; ln = parts[1]; }
+        else if (parts.length >= 3) { fn = parts[0]; ln = parts[parts.length - 1]; mi = parts.slice(1, -1).join(' '); }
+        const setField = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        setField('upi-firstname', fn);
+        setField('upi-lastname', ln);
+        setField('upi-mi', mi);
+    })();
+    setModal('upi-birthdate', c ? (c.birthdate || '') : '', '');
+    const addressValue = (c && c.address) ? c.address : '';
+    const upiAddressEl = document.getElementById('upi-address');
+    if (upiAddressEl) upiAddressEl.value = addressValue;
+    if (window.PsgcAddress) {
+        window.PsgcAddress.init('upi-');
+        if (addressValue) {
+            setTimeout(function () {
+                window.PsgcAddress.setValue('upi-', addressValue);
+            }, 800);
+        }
     }
-
-    if (!validateEmail(newEmail)) {
-        openAlertModal('Please enter a valid email address', 'warning');
-        return;
+    setModal('upi-degree', c ? c.degree : '', 'N/A');
+    setModal('upi-email', data.email || (c ? c.email : '') || '', 'N/A');
+    const specializationEl = document.getElementById('upi-specialization');
+    if (specializationEl) {
+        setModal('upi-specialization', c ? c.specialization : '', 'N/A');
     }
-
-    // Create a FormData object to send the data
-    const formData = new FormData();
-    formData.append('username', newUsername);
-    formData.append('email', newEmail);
-
-    // First update text fields
-    fetch(window.BASE_URL + 'counselor/profile/update', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-    })
-    .then(response => response.json())
-    .then(async data => {
-        if (!data.success) {
-            throw new Error(data.message || 'Failed to update profile');
-        }
-
-        // If there is a selected picture, upload it next
-        const fileInput = document.getElementById('update-picture');
-        const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-        if (file) {
-            const picForm = new FormData();
-            picForm.append('profile_picture', file);
-            const resp = await fetch(window.BASE_URL + 'counselor/profile/picture', {
-                method: 'POST',
-                body: picForm,
-                credentials: 'include'
-            });
-            const picData = await resp.json();
-            if (!picData.success) {
-                throw new Error(picData.message || 'Failed to upload picture');
-            }
-            // Update on-page avatar
-            const imgEl = document.getElementById('profile-img');
-            if (imgEl && picData.picture_url) {
-                const newUrl = resolveImageUrl(picData.picture_url) + '?t=' + Date.now();
-                imgEl.src = newUrl;
-                try { localStorage.setItem('counselor_profile_picture', newUrl); } catch (e) {}
-            }
-        }
-
-        // Update the display values
-        document.getElementById('display-username').value = newUsername;
-        document.getElementById('display-email').value = newEmail;
-
-        // Close the modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('updateProfileModal'));
-        modal.hide();
-
-        // Show success message
-        openAlertModal('Profile updated successfully!', 'success');
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        openAlertModal(error.message || 'Failed to update profile. Please try again later.', 'error');
-    });
-}
-
-// Function to load current profile data
-function loadProfileData() {
-    SecureLogger.info('Loading profile data...');
-    
-    // Show loading state
-    document.getElementById('display-username').value = 'Loading...';
-    document.getElementById('display-email').value = 'Loading...';
-
-    fetch(window.BASE_URL + 'counselor/profile/get', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-        }
-    })
-    .then(response => {
-        SecureLogger.info('Response status:', response.status);
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                // Session expired or unauthorized
-                window.location.href = window.BASE_URL + 'counselor/dashboard';
-                return;
-            }
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        SecureLogger.info('Profile data:', data);
-        if (data.success) {
-            // Update display values
-            document.getElementById('display-userid').textContent = data.user_id || 'N/A';
-            document.getElementById('display-username').value = data.username || 'N/A';
-            document.getElementById('display-email').value = data.email || 'N/A';
-
-            // Set current profile picture
-            const imgEl = document.getElementById('profile-img');
-            const previewEl = document.getElementById('update-picture-preview');
-            const src = resolveImageUrl(data.profile_picture);
-            if (imgEl) imgEl.src = src;
-            if (previewEl) {
-                previewEl.src = src;
-                previewEl.style.display = 'block';
-            }
-
-            // Update modal input values
-            document.getElementById('update-username').value = data.username || '';
-            document.getElementById('update-email').value = data.email || '';
-
-            // Populate Personal Information section with default values for first-time users
-            const c = (data && data.counselor) ? data.counselor : null;
-            const setVal = (id, v, defaultValue = 'N/A') => { const el = document.getElementById(id); if (el) el.value = v || defaultValue; };
-            const setText = (id, v, defaultValue = 'N/A') => { const el = document.getElementById(id); if (el) el.textContent = v || defaultValue; };
-            const setValInput = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
-            setValInput('pi-counselor-id-input', data.user_id || '');
-            setVal('pi-fullname', c ? c.name : '', 'N/A');
-            setVal('pi-birthdate', c ? (c.birthdate || '') : '', '');
-            setVal('pi-address', c ? c.address : '', 'N/A');
-            setVal('pi-degree', c ? c.degree : '', 'N/A');
-            setVal('pi-email', c ? c.email : data.email || '', 'N/A');
-            // Note: specialization field might not exist in all database versions
-            const specializationDisplayEl = document.getElementById('pi-specialization');
-            if (specializationDisplayEl) {
-                setVal('pi-specialization', c ? c.specialization : '', 'N/A');
-            }
-            setVal('pi-contact', c ? c.contact_number : '', 'N/A');
-            setVal('pi-sex', c ? c.sex : '', '');
-            setVal('pi-civil', c ? c.civil_status : '', '');
-
-            // Initialize modal fields with default values for first-time users
-            const setModal = (id, v, defaultValue = 'N/A') => { 
-                const el = document.getElementById(id); 
-                if (el) el.value = v || defaultValue; 
-            };
-            // Split stored name into firstname, MI, lastname
-            (function () {
-                const storedName = (c && c.name) ? c.name.trim() : '';
-                const parts = storedName ? storedName.split(/\s+/) : [];
-                let fn = '', ln = '', mi = '';
-                if (parts.length === 1) { fn = parts[0]; }
-                else if (parts.length === 2) { fn = parts[0]; ln = parts[1]; }
-                else if (parts.length >= 3) { fn = parts[0]; ln = parts[parts.length - 1]; mi = parts.slice(1, -1).join(' '); }
-                const setField = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-                setField('upi-firstname', fn);
-                setField('upi-lastname', ln);
-                setField('upi-mi', mi);
-            })();
-            setModal('upi-birthdate', c ? (c.birthdate || '') : '', '');
-            // Store address for PSGC restoration; set hidden input too
-            const addressValue = (c && c.address) ? c.address : '';
-            const upiAddressEl = document.getElementById('upi-address');
-            if (upiAddressEl) upiAddressEl.value = addressValue;
-            // Initialize PSGC dropdowns and restore address
-            if (window.PsgcAddress) {
-                window.PsgcAddress.init('upi-');
-                if (addressValue) {
-                    // Give regions time to load from API, then restore
-                    setTimeout(function () {
-                        window.PsgcAddress.setValue('upi-', addressValue);
-                    }, 800);
-                }
-            }
-            setModal('upi-degree', c ? c.degree : '', 'N/A');
-            setModal('upi-email', c ? c.email : data.email || '', 'N/A');
-            // Note: specialization field might not exist in all database versions
-            const specializationEl = document.getElementById('upi-specialization');
-            if (specializationEl) {
-                setModal('upi-specialization', c ? c.specialization : '', 'N/A');
-            }
-            setModal('upi-contact', c ? c.contact_number : '', 'N/A');
-            setModal('upi-sex', c ? c.sex : '', '');
-            setModal('upi-civil', c ? c.civil_status : '', '');
-        } else {
-            throw new Error(data.message || 'Failed to load profile data');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // Show error state in the UI
-        document.getElementById('display-username').value = 'Error loading data';
-        document.getElementById('display-email').value = 'Error loading data';
-        
-        if (error.message === 'User not logged in') {
-            setTimeout(() => {
-                window.location.href = window.BASE_URL + 'counselor/dashboard';
-            }, 1500);
-        } else {
-            openAlertModal('Failed to load profile data. Please try again later.', 'error');
-        }
-    });
+    setModal('upi-contact', c ? c.contact_number : '', 'N/A');
+    setModal('upi-sex', c ? c.sex : '', '');
+    setModal('upi-civil', c ? c.civil_status : '', '');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     SecureLogger.info("DOM loaded, setting up profile functionality");
-    
-    // Load profile data when page loads
-    loadProfileData();
 
     // Initialize availability UI
     initAvailabilityUi();
 
-    // Sync right profile container height to left
-    function syncRightHeight() {
-        const left = document.querySelector('.col-lg-5 .profile-container');
-        const rightDetails = document.querySelector('.col-lg-7 .profile-container .scroll-inner');
-        const right = document.querySelector('.col-lg-7 .profile-container');
-        if (!left || !right || !rightDetails) return;
-        const leftRect = left.getBoundingClientRect();
-        // Set right container height equal to left (minus border differences)
-        right.style.minHeight = leftRect.height + 'px';
-        // Ensure inner scroll area fits within right container
-        const header = right.querySelector('.profile-header');
-        const details = right.querySelector('.profile-details');
-        // Only adjust max-height for inner scroll to avoid horizontal scroll
-        const paddingTop = 0;
-        const desired = leftRect.height - paddingTop;
-        rightDetails.style.maxHeight = Math.max(200, desired - 0) + 'px';
-    }
-
-    syncRightHeight();
-    window.addEventListener('resize', () => { syncRightHeight(); });
-    // Re-sync after images load (e.g., profile picture)
-    const img = document.getElementById('profile-img');
-    if (img) { img.addEventListener('load', syncRightHeight); }
-    
     // Get the logout button
     const logoutBtn = document.querySelector('.btn-logout');
 
@@ -378,74 +246,6 @@ function togglePassword(inputId) {
     }
 }
 
-// Preview selected profile picture in modal
-document.addEventListener('change', function(e) {
-    const target = e.target;
-    if (target && target.id === 'update-picture' && target.files && target.files[0]) {
-        const file = target.files[0];
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            const preview = document.getElementById('update-picture-preview');
-            if (preview) {
-                preview.src = ev.target.result;
-                preview.style.display = 'block';
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-// Function to change password
-function changePassword() {
-    const currentPassword = document.getElementById('current-password').value;
-    const newPassword = document.getElementById('new-password').value;
-    const confirmPassword = document.getElementById('confirm-password').value;
-
-    // Validate inputs
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        openAlertModal('Please fill in all password fields', 'warning');
-        return;
-    }
-
-    if (newPassword !== confirmPassword) {
-        openAlertModal('New passwords do not match', 'warning');
-        return;
-    }
-
-    if (newPassword.length < 8) {
-        openAlertModal('New password must be at least 8 characters long', 'warning');
-        return;
-    }
-
-    // Create FormData object
-    const formData = new FormData();
-    formData.append('current_password', currentPassword);
-    formData.append('new_password', newPassword);
-    formData.append('confirm_password', confirmPassword);
-
-    // Send request to server
-    fetch(window.BASE_URL + 'update-password', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Success logic
-            openAlertModal('Password updated successfully!', 'success');
-            document.getElementById('changePasswordForm').reset();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
-            modal.hide();
-        } else {
-            openAlertModal(data.message || 'Failed to update password', 'error');
-        }
-    })
-    .catch(error => {
-        openAlertModal('Failed to update password. Please try again later.', 'error');
-    });
-}
-
 // Save Personal Info changes
 function savePersonalInfoChanges() {
     const form = new FormData();
@@ -476,26 +276,9 @@ function savePersonalInfoChanges() {
     .then(r => r.json())
     .then(d => {
         if (!d || !d.success) throw new Error(d?.message || 'Failed to save');
-        // Refresh display from server to reflect saved data
-        return fetch((window.BASE_URL || '/') + 'counselor/profile/get', { credentials: 'include' });
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (!data.success) throw new Error('Failed to reload');
-
-        const c = data.counselor || {};
-        const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
-        const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || '—'; };
-        setText('pi-counselor-id', data.user_id || '—');
-        setVal('pi-fullname', c.name);
-        setVal('pi-birthdate', c.birthdate);
-        setVal('pi-address', c.address);
-        setVal('pi-degree', c.degree);
-        setVal('pi-email', c.email || data.email);
-        setVal('pi-contact', c.contact_number);
-        setVal('pi-sex', c.sex);
-        setVal('pi-civil', c.civil_status);
-
+        if (window.AccountProfileActions) {
+            window.AccountProfileActions.loadAccountProfileData();
+        }
         const modal = bootstrap.Modal.getInstance(document.getElementById('updatePersonalInfoModal'));
         if (modal) modal.hide();
         openAlertModal('Personal information updated successfully!', 'success');
@@ -545,29 +328,32 @@ function initAvailabilityUi() {
             const days = getSelectedDays();
             if (days.length === 0) { openAlertModal('Select at least one day.', 'warning'); return; }
             days.forEach(day => addRangeForDay(day, { from, to }));
-            renderAvailabilityChips();
+            renderAvailabilitySchedule('avail-modal-week', true);
         });
     }
 
     const saveBtn = document.getElementById('save-availability');
-    if (saveBtn) { saveBtn.addEventListener('click', () => { if (availabilityEditMode) { saveAvailability(); } }); }
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => saveAvailability());
+    }
 
     const editBtn = document.getElementById('edit-availability');
-    if (editBtn) { editBtn.addEventListener('click', enterAvailabilityEditMode); }
-    const cancelBtn = document.getElementById('cancel-availability');
-    if (cancelBtn) { cancelBtn.addEventListener('click', () => { loadAvailabilityFromServer(); setAvailabilityDisplayMode(true); }); }
+    if (editBtn) { editBtn.addEventListener('click', openAvailabilityModal); }
 
-    // initialize display mode by default
-    setAvailabilityDisplayMode(true);
+    const availModalEl = document.getElementById('availabilityModal');
+    if (availModalEl) {
+        availModalEl.addEventListener('show.bs.modal', onAvailabilityModalShow);
+        availModalEl.addEventListener('hidden.bs.modal', onAvailabilityModalHidden);
+    }
 
-    // Initial load
     loadAvailabilityFromServer();
 }
 
 // ----- Availability state and helpers -----
 const DAYS_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 let availabilityState = { rangesByDay: { Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: [] } };
-let availabilityEditMode = false;
+let availabilitySnapshot = null;
+let availabilityModalSaved = false;
 
 // Convert 12-hour format time to minutes for comparison
 function timeToMinutes(t) { 
@@ -666,61 +452,119 @@ function compactTimesToRanges(times) {
     return ranges;
 }
 
-function renderAvailabilityChips() {
-    const host = document.getElementById('time-slots-list');
-    if (!host) return;
-    host.innerHTML = '';
+const DAY_ABBR = {
+    Monday: 'Mon',
+    Tuesday: 'Tue',
+    Wednesday: 'Wed',
+    Thursday: 'Thu',
+    Friday: 'Fri',
+};
+
+function updateAvailabilityStats() {
+    let openDays = 0;
+    let slotCount = 0;
     DAYS_ORDER.forEach(day => {
         const ranges = availabilityState.rangesByDay[day] || [];
-        if (!ranges.length) return;
-        const section = document.createElement('div');
-        section.className = 'day-section';
-        const title = document.createElement('div');
-        title.className = 'day-section-title';
-        title.textContent = day;
-        section.appendChild(title);
-        const wrap = document.createElement('div');
-        ranges.forEach((r, idx) => {
-            const chip = document.createElement('span');
-            chip.className = 'slot-chip';
-            // Display time range in 12-hour format (already in correct format)
-            const timeRange = `${r.from} - ${r.to}`;
-            chip.textContent = timeRange;
-            if (availabilityEditMode) {
-                const rm = document.createElement('button');
-                rm.type = 'button';
-                rm.className = 'chip-remove';
-                rm.textContent = '×';
-                rm.onclick = () => {
-                    // Optimistic removal in UI, then delete on server
-                    const removed = { from: r.from, to: r.to };
-                    removeRangeForDay(day, idx);
-                    renderAvailabilityChips();
-                    fetch((window.BASE_URL || '/') + 'counselor/profile/availability', {
-                        method: 'DELETE',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ day: day, from: removed.from, to: removed.to })
-                    })
-                    .then(res => res.json())
-                    .then(d => {
-                        if (!d || !d.success) {
-                            openAlertModal((d && d.message) || 'Failed to delete slot', 'error');
-                            loadAvailabilityFromServer();
-                        }
-                    })
-                    .catch(() => {
-                        openAlertModal('Failed to delete slot', 'error');
-                        loadAvailabilityFromServer();
-                    });
-                };
-                chip.appendChild(rm);
-            }
-            wrap.appendChild(chip);
-        });
-        section.appendChild(wrap);
-        host.appendChild(section);
+        if (ranges.length) {
+            openDays += 1;
+            slotCount += ranges.length;
+        }
     });
+    const daysEl = document.getElementById('avail-stat-days');
+    const slotsEl = document.getElementById('avail-stat-slots');
+    if (daysEl) daysEl.textContent = String(openDays);
+    if (slotsEl) slotsEl.textContent = String(slotCount);
+}
+
+function cloneAvailabilityState() {
+    const copy = { Monday: [], Tuesday: [], Wednesday: [], Thursday: [], Friday: [] };
+    DAYS_ORDER.forEach(day => {
+        copy[day] = (availabilityState.rangesByDay[day] || []).map(r => ({ ...r }));
+    });
+    return copy;
+}
+
+function applyAvailabilitySnapshot(snapshot) {
+    DAYS_ORDER.forEach(day => {
+        availabilityState.rangesByDay[day] = (snapshot[day] || []).map(r => ({ ...r }));
+    });
+}
+
+function renderAvailabilitySchedule(containerId, allowRemove) {
+    const host = document.getElementById(containerId);
+    if (!host) return;
+
+    host.innerHTML = '';
+    let hasAnySlot = false;
+
+    DAYS_ORDER.forEach(day => {
+        const ranges = availabilityState.rangesByDay[day] || [];
+        if (ranges.length) hasAnySlot = true;
+
+        const card = document.createElement('article');
+        card.className = 'avail-day-card' + (ranges.length ? ' is-open' : ' is-off');
+
+        const head = document.createElement('div');
+        head.className = 'avail-day-card-head';
+        const abbr = document.createElement('span');
+        abbr.className = 'avail-day-abbr';
+        abbr.textContent = containerId === 'time-slots-list' ? day : (DAY_ABBR[day] || day);
+        const dot = document.createElement('span');
+        dot.className = 'avail-day-dot';
+        dot.setAttribute('aria-hidden', 'true');
+        head.appendChild(abbr);
+        head.appendChild(dot);
+        card.appendChild(head);
+
+        const body = document.createElement('div');
+        body.className = 'avail-day-card-body';
+
+        if (!ranges.length) {
+            const off = document.createElement('span');
+            off.className = 'avail-day-off';
+            off.textContent = 'Unavailable';
+            body.appendChild(off);
+        } else {
+            ranges.forEach((r, idx) => {
+                const chip = document.createElement('span');
+                chip.className = 'slot-chip';
+
+                const label = document.createElement('span');
+                label.className = 'slot-chip-label';
+                label.textContent = r.from + ' – ' + r.to;
+                chip.appendChild(label);
+
+                if (allowRemove) {
+                    const rm = document.createElement('button');
+                    rm.type = 'button';
+                    rm.className = 'chip-remove';
+                    rm.setAttribute('aria-label', 'Remove ' + day + ' ' + r.from + ' to ' + r.to);
+                    rm.setAttribute('title', 'Remove time slot');
+                    rm.innerHTML = '<span class="chip-remove-x" aria-hidden="true">×</span>';
+                    rm.onclick = () => {
+                        removeRangeForDay(day, idx);
+                        renderAvailabilitySchedule('avail-modal-week', true);
+                    };
+                    chip.appendChild(rm);
+                }
+                body.appendChild(chip);
+            });
+        }
+
+        card.appendChild(body);
+        host.appendChild(card);
+    });
+
+    if (containerId === 'time-slots-list') {
+        updateAvailabilityStats();
+        const emptyMsg = document.getElementById('avail-empty-msg');
+        if (emptyMsg) emptyMsg.hidden = hasAnySlot;
+        host.hidden = !hasAnySlot;
+    }
+}
+
+function renderAvailabilityChips() {
+    renderAvailabilitySchedule('time-slots-list', false);
 }
 
 function getSelectedDays() {
@@ -795,40 +639,55 @@ function saveAvailability() {
     .then(r => r.json())
     .then(d => {
         if (!d.success) throw new Error(d.message || 'Failed to save availability');
-        openAlertModal('Availability saved successfully!', 'success');
-        // Reload to reflect server state, then return to display mode
-        loadAvailabilityFromServer();
-        setAvailabilityDisplayMode(true);
+        availabilityModalSaved = true;
+        availabilitySnapshot = cloneAvailabilityState();
+        openAlertModal(d.message || 'Availability saved successfully!', 'success');
+        const modalEl = document.getElementById('availabilityModal');
+        if (modalEl) {
+            const inst = bootstrap.Modal.getInstance(modalEl);
+            if (inst) inst.hide();
+        }
+        renderAvailabilitySchedule('time-slots-list', false);
     })
     .catch(err => {
+        availabilityModalSaved = false;
         openAlertModal(err.message || 'Failed to save availability', 'error');
     });
 }
 
-// ===== Display vs Edit Mode Toggle =====
-function setAvailabilityDisplayMode(displayMode) {
-    availabilityEditMode = !displayMode;
-    const editFields = document.getElementById('availability-edit-fields');
-    const addBtn = document.getElementById('add-time-slot');
-    const saveBtn = document.getElementById('save-availability');
-    const editBtn = document.getElementById('edit-availability');
-    const cancelBtn = document.getElementById('cancel-availability');
-
-    if (editFields) editFields.style.display = displayMode ? 'none' : '';
-    if (addBtn) addBtn.style.display = displayMode ? 'none' : '';
-    if (saveBtn) saveBtn.style.display = displayMode ? 'none' : '';
-    if (editBtn) editBtn.style.display = displayMode ? '' : 'none';
-    if (cancelBtn) cancelBtn.style.display = displayMode ? 'none' : '';
-
-    // Prevent interacting with checkboxes and selects in display mode
-    const controls = [];
-    document.querySelectorAll('#availability-days input[type="checkbox"], #availability-times select').forEach(el => controls.push(el));
-    controls.forEach(el => { el.disabled = displayMode; });
-
-    // Re-render chips so remove buttons appear only in edit mode
-    renderAvailabilityChips();
+function openAvailabilityModal() {
+    availabilityModalSaved = false;
+    availabilitySnapshot = cloneAvailabilityState();
+    syncAvailabilityCheckboxes();
+    renderAvailabilitySchedule('avail-modal-week', true);
+    const modalEl = document.getElementById('availabilityModal');
+    if (modalEl) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
 }
 
-function enterAvailabilityEditMode() {
-    setAvailabilityDisplayMode(false);
+function onAvailabilityModalShow() {
+    availabilityModalSaved = false;
+    if (!availabilitySnapshot) {
+        availabilitySnapshot = cloneAvailabilityState();
+    }
+    syncAvailabilityCheckboxes();
+    renderAvailabilitySchedule('avail-modal-week', true);
+}
+
+function onAvailabilityModalHidden() {
+    if (!availabilityModalSaved && availabilitySnapshot) {
+        applyAvailabilitySnapshot(availabilitySnapshot);
+    }
+    availabilitySnapshot = null;
+    renderAvailabilitySchedule('time-slots-list', false);
+}
+
+function syncAvailabilityCheckboxes() {
+    DAYS_ORDER.forEach(day => {
+        const cb = document.getElementById('day-' + day);
+        if (!cb) return;
+        const ranges = availabilityState.rangesByDay[day] || [];
+        cb.checked = ranges.length > 0;
+    });
 }

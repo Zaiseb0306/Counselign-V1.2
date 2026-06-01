@@ -34,6 +34,26 @@ document.addEventListener('DOMContentLoaded', function() {
             return (hours * 60) + minutes;
         }
 
+        function normalizeAppointmentStatus(appointment) {
+            const rawStatus = String(appointment.status || '').trim().toLowerCase();
+            const studentFeedbackStatus = String(appointment.student_feedback_status || '').trim().toLowerCase();
+            const feedbackStatus = String(appointment.feedback_status || '').trim().toLowerCase();
+
+            const isFeedbackSubmitted =
+                studentFeedbackStatus === 'feedback submitted' ||
+                feedbackStatus === 'submitted';
+
+            if ((rawStatus === 'completed' || rawStatus === 'feedback_pending') && !isFeedbackSubmitted) {
+                return 'feedback_pending';
+            }
+
+            if (rawStatus === 'feedback_pending' && isFeedbackSubmitted) {
+                return 'completed';
+            }
+
+            return rawStatus || 'pending';
+        }
+
         function loadAppointments() {
             console.log('Loading appointments...');
             const timestamp = new Date().getTime();
@@ -50,7 +70,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 console.log('Data received:', data);
                 if (data.status !== 'success') throw new Error(data.message || 'Failed');
-                appointments = Array.isArray(data.appointments) ? data.appointments : [];
+                appointments = (Array.isArray(data.appointments) ? data.appointments : []).map(app => ({
+                    ...app,
+                    status: normalizeAppointmentStatus(app)
+                }));
                 console.log('Appointments loaded:', appointments.length);
                 updateStatusCounts(appointments);
                 displayAppointments(appointments);
@@ -130,23 +153,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function createAppointmentCard(appointment){
             const card = document.createElement('div');
-            card.className = 'appointment-card';
+            const status = appointment.status || 'pending';
+            card.className = `appointment-card ${status} status-${status}`;
             card.dataset.id = appointment.id;
-            card.classList.add(`status-${appointment.status}`);
-            const timeLabel = appointment.status==='pending' ? 'Received: ' : 'Updated: ';
-            const ts = appointment.status==='pending' ? appointment.created_at : (appointment.updated_at||appointment.created_at);
+            const timeLabel = status === 'pending' ? 'Received: ' : 'Updated: ';
+            const ts = status === 'pending' ? appointment.created_at : (appointment.updated_at || appointment.created_at);
+            const statusLabel = status === 'feedback_pending' ? 'InProgress' : capitalizeFirstLetter(status);
+            const displayId = appointment.student_id || appointment.id;
             card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <p class="student-id mb-0">Student ID: ${appointment.student_id}</p>
-                    <span class="badge ${getStatusBadgeClass(appointment.status)}">${capitalizeFirstLetter(appointment.status)}</span>
+                <div class="appt-card-top">
+                    <span class="appt-card-id"><i class="fas fa-user-graduate"></i> ${displayId}</span>
+                    <span class="badge ${getStatusBadgeClass(status)}">${statusLabel}</span>
                 </div>
-                <p class="date-time mb-1">Appointment Date: ${formatDate(appointment.preferred_date)}</p>
-                <p class="date-time mb-0">Time: ${appointment.preferred_time}</p>
-                <p class="timestamp text-muted mt-2 mb-0" style="font-size: 0.8rem;">${timeLabel}${formatDateTime(ts)}</p>
-                <hr class="my-2">
-                <button class="btn btn-sm btn-outline-primary view-details-btn w-100" data-id="${appointment.id}">View Details</button>
+                <div class="appt-card-schedule">
+                    <div class="appt-card-date"><i class="fas fa-calendar"></i> ${formatDate(appointment.preferred_date)}</div>
+                    <div class="appt-card-time"><i class="fas fa-clock"></i> ${appointment.preferred_time || '—'}</div>
+                </div>
+                <p class="timestamp appt-card-meta">${timeLabel}${formatDateTime(ts)}</p>
+                <button type="button" class="btn view-details-btn w-100" data-id="${appointment.id}">
+                    <i class="fas fa-arrow-right me-1"></i> View Details
+                </button>
             `;
-            card.querySelector('.view-details-btn').addEventListener('click', function(){ openAppointmentDetails(appointment); });
+            card.querySelector('.view-details-btn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                openAppointmentDetails(appointment);
+            });
+            const index = appointmentsList?.children?.length || 0;
+            card.style.animationDelay = `${Math.min(index, 8) * 0.04}s`;
             return card;
         }
 
@@ -184,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
             set('#modalPurpose', (purpose && purpose.trim() !== '') ? purpose : null);
             set('#modalCounselorPreference', appointment.counselor_name || 'No Preference');
             const modalStatus = modal.querySelector('#modalStatus');
-            if (modalStatus) { modalStatus.textContent = capitalizeFirstLetter(appointment.status); modalStatus.className = `badge ${getStatusBadgeClass(appointment.status)}`; }
+            if (modalStatus) { modalStatus.textContent = appointment.status === 'feedback_pending' ? 'InProgress' : capitalizeFirstLetter(appointment.status); modalStatus.className = `badge ${getStatusBadgeClass(appointment.status)}`; }
             set('#modalCreated', formatDateTime(appointment.created_at));
             set('#modalUpdated', formatDateTime(appointment.updated_at));
             const modalDescription = modal.querySelector('#modalDescription'); if (modalDescription) modalDescription.textContent = appointment.description || 'No description provided.';
@@ -329,10 +362,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 modalFooter.className = 'modal-footer';
                 const container = document.createElement('div'); container.className = 'container-fluid px-4';
                 const row = document.createElement('div'); row.className = 'row justify-content-center align-items-center';
-                const leftCol = document.createElement('div'); leftCol.className = 'col-3 text-end pe-2';
-                const rescheduleBtn = document.createElement('button'); rescheduleBtn.type='button'; rescheduleBtn.className='btn btn-warning'; rescheduleBtn.id='rescheduleAppointmentBtn'; rescheduleBtn.innerHTML='<i class="fas fa-calendar-alt me-1"></i> Re-schedule'; leftCol.appendChild(rescheduleBtn);
-                const centerCol=document.createElement('div'); centerCol.className='col-2 text-center px-0'; const closeBtn=document.createElement('button'); closeBtn.type='button'; closeBtn.className='btn btn-secondary'; closeBtn.setAttribute('data-bs-dismiss','modal'); closeBtn.textContent='Close'; centerCol.appendChild(closeBtn);
-                const rightCol=document.createElement('div'); rightCol.className='col-3 text-start ps-2'; const approveBtn=document.createElement('button'); approveBtn.type='button'; approveBtn.className='btn btn-primary'; approveBtn.id='approveAppointmentBtn'; approveBtn.innerHTML='<i class="fas fa-check me-1"></i> Approve'; rightCol.appendChild(approveBtn);
+                const leftCol = document.createElement('div'); leftCol.className = 'col-12 col-md-3 mb-2 mb-md-0 text-md-end pe-md-2';
+                const rescheduleBtn = document.createElement('button'); rescheduleBtn.type='button'; rescheduleBtn.className='btn btn-warning w-100'; rescheduleBtn.id='rescheduleAppointmentBtn'; rescheduleBtn.innerHTML='<i class="fas fa-calendar-alt me-1"></i> Re-schedule'; leftCol.appendChild(rescheduleBtn);
+                const centerCol=document.createElement('div'); centerCol.className='col-12 col-md-2 mb-2 mb-md-0 text-center px-md-0'; const closeBtn=document.createElement('button'); closeBtn.type='button'; closeBtn.className='btn btn-secondary w-100'; closeBtn.setAttribute('data-bs-dismiss','modal'); closeBtn.textContent='Close'; centerCol.appendChild(closeBtn);
+                const rightCol=document.createElement('div'); rightCol.className='col-12 col-md-3 text-md-start ps-md-2'; const approveBtn=document.createElement('button'); approveBtn.type='button'; approveBtn.className='btn btn-primary w-100'; approveBtn.id='approveAppointmentBtn'; approveBtn.innerHTML='<i class="fas fa-check me-1"></i> Approve'; rightCol.appendChild(approveBtn);
                 row.appendChild(leftCol); row.appendChild(centerCol); row.appendChild(rightCol); container.appendChild(row); modalFooter.appendChild(container);
             } else {
                 modalFooter.innerHTML = '';
@@ -342,6 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     case 'approved': statusClass='bg-success'; statusIcon='check'; statusText='Approved'; break;
                     case 'rejected': statusClass='bg-danger'; statusIcon='times'; statusText='Rejected'; break;
                     case 'completed': statusClass='bg-primary'; statusIcon='check-double'; statusText='Completed'; break;
+                    case 'feedback_pending': statusClass='bg-secondary'; statusIcon='info-circle'; statusText='InProgress'; break;
                     default: statusClass='bg-secondary'; statusIcon='info-circle'; statusText='Completed';
                 }
                 const statusIndicator=document.createElement('div'); statusIndicator.className=`status-indicator d-inline-flex align-items-center ${statusClass} text-white px-3 py-2 rounded`; statusIndicator.innerHTML=`<i class="fas fa-${statusIcon} me-2"></i><span>This appointment has been ${statusText.toLowerCase()}</span>`;
@@ -389,13 +423,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function formatDate(d){ return new Date(d).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}); }
         function formatDateTime(dt){ return new Date(dt).toLocaleString(undefined,{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
-        function capitalizeFirstLetter(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+        function capitalizeFirstLetter(s){
+            if (!s) return '';
+            return String(s)
+                .split('_')
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
+        }
         function getStatusBadgeClass(status){
             switch(status){
-                case 'pending': return 'bg-warning text-dark';
+                case 'pending': return 'badge-pending';
                 case 'approved': return 'bg-success';
                 case 'rejected': return 'bg-danger';
                 case 'completed': return 'bg-info';
+                case 'feedback_pending': return 'bg-secondary';
                 case 'rescheduled': return 'badge-rescheduled';
                 default: return 'bg-secondary';
             }
@@ -410,7 +451,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (detailsModal) {
             detailsModal.addEventListener('click', function(event){
                 const target = event.target;
-                if (target.id === 'approveAppointmentBtn' || target.closest('#approveAppointmentBtn')) {
+                const approveBtn = target.closest('#approveAppointmentBtn');
+                if (approveBtn) {
+                    console.log('Approve button clicked');
                     const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
                     document.getElementById('confirmationModalTitle').textContent = 'Confirm Approval';
                     document.getElementById('confirmationModalBody').innerHTML = '<p>Are you sure you want to approve this appointment?</p><p class="text-muted">This action will notify the student via email.</p>';
@@ -419,6 +462,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmBtn.innerHTML = '<i class="fas fa-check me-1"></i>Confirm';
                     document.getElementById('confirmationModal').dataset.action = 'approve';
                     confirmationModal.show();
+                    event.preventDefault();
+                    event.stopPropagation();
                 } else if (target.id === 'rescheduleAppointmentBtn' || target.closest('#rescheduleAppointmentBtn')) {
                     // Open reschedule modal
                     const appointmentModal = bootstrap.Modal.getInstance(document.getElementById('appointmentDetailsModal'));

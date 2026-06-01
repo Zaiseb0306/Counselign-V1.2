@@ -671,6 +671,7 @@ footer {
 
 .navbar-drawer .nav-link {
     padding: 0.75rem 1rem !important;
+    color: #fff !important;
     display: flex;
     justify-content: flex-start;
     align-items: center !important; /* Vertically center icon and text */
@@ -679,6 +680,11 @@ footer {
 
 .navbar-drawer .nav-link i {
     margin-right: 10px; /* Add space between icon and text */
+    color: #fff !important;
+}
+
+.navbar-drawer .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 /* Navbar Overlay */

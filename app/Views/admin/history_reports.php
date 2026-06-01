@@ -9,28 +9,27 @@
     <meta http-equiv="Expires" content="0">
     <meta name="description" content="Counselign">
     <title>Report History - Counselign</title>
+    <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" type="image/x-icon">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?= base_url('css/admin/history_reports.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/admin/header.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
-
+    <link rel="stylesheet" href="<?= base_url('css/counselor/history_reports.css?v=2') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/admin/admin_history_reports_theme.css?v=2') ?>">
+    <?= view('admin/partials/vibe_styles') ?>
 </head>
 
-<body>
+<body class="adm-hr-page-body hr-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
-            <!-- Logo/Toggle Button -->
             <button class="sidebar-toggle-btn" id="sidebarToggle" title="Toggle Sidebar">
                 <img src="<?= base_url('Photos/counselign_logo.png') ?>" alt="Logo" class="sidebar-logo">
                 <span class="sidebar-brand-text">Counselign</span>
             </button>
 
-            <!-- Navigation Links -->
             <nav class="sidebar-nav">
-                <a href="<?= base_url('admin/dashboard') ?>" class="sidebar-link active" title="Dashboard">
+                <a href="<?= base_url('admin/dashboard') ?>" class="sidebar-link" title="Dashboard">
                     <i class="fas fa-home"></i>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
@@ -41,6 +40,14 @@
                 <a href="<?= base_url('admin/appointments') ?>" class="sidebar-link" title="Recent Appointments">
                     <i class="fas fa-calendar-check"></i>
                     <span class="sidebar-text">Recent Appointments</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-questions') ?>" class="sidebar-link" title="Feedback Questions">
+                    <i class="fas fa-question-circle"></i>
+                    <span class="sidebar-text">Feedback Questions</span>
+                </a>
+                <a href="<?= base_url('admin/feedback-analytics/view-feedback') ?>" class="sidebar-link" title="View Feedback">
+                    <i class="fas fa-comments"></i>
+                    <span class="sidebar-text">View Feedback</span>
                 </a>
                 <a href="<?= base_url('admin/follow-up-sessions') ?>" class="sidebar-link" title="Follow-up Sessions">
                     <i class="fas fa-calendar-days"></i>
@@ -58,19 +65,15 @@
         </div>
     </aside>
 
-    <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Floating Sidebar Toggle for Mobile (shows when sidebar is hidden) -->
     <button class="floating-sidebar-toggle" id="floatingSidebarToggle" title="Open Menu">
         <img src="<?= base_url('Photos/counselign_logo.png') ?>" alt="Menu">
     </button>
 
     <div class="main-wrapper" id="mainWrapper">
-        <!-- Top Bar -->
         <header class="top-bar">
             <div class="top-bar-left">
-                <!-- Page Title Added Here -->
                 <h1 class="page-title-header">
                     <i class="fas fa-history me-2"></i>
                     Report History
@@ -78,8 +81,11 @@
             </div>
 
             <div class="top-bar-right">
+                <button class="top-bar-btn" onclick="window.location.href='<?= base_url('admin/dashboard') ?>'" title="Current Reports">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    <span class="btn-label">Current Reports</span>
+                </button>
 
-                <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
                     <button class="top-bar-btn profile-btn" id="profileDropdownBtn">
                         <img id="profile-img-top" src="<?= base_url('Photos/UGC-Logo.png') ?>" alt="Profile" class="profile-img-small">
@@ -109,14 +115,11 @@
             </div>
         </header>
 
-        <main class="main-content">
-            <div class="container report-container">
-                <div class="page-header" hidden>
-                    <p class="text-muted">View past appointment reports and statistics</p>
-                </div>
+        <main class="appt-page hr-page">
+            <div class="main-content">
+            <div class="container-fluid px-4 hr-container report-container">
 
-                <!-- Filter Section -->
-                <div class="filter-section">
+                <section class="rpt-panel filter-section">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4">
                             <div class="input-group">
@@ -140,93 +143,80 @@
                             </button>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div class="row stats-summary">
-                    <div class="col">
-                        <div class="stat-card completed">
-                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                            <div class="stat-details">
-                                <h3 id="completedCount">0</h3>
-                                <p>Completed</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="stat-card approved">
-                            <div class="stat-icon"><i class="fas fa-thumbs-up"></i></div>
-                            <div class="stat-details">
-                                <h3 id="approvedCount">0</h3>
-                                <p>Approved</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="stat-card rescheduled">
-                            <div class="stat-icon bg-warning text-white rounded-circle"><i class="fas fa-calendar-alt"></i></div>
-                            <div class="stat-details">
-                                <h3 id="rescheduledCount">0</h3>
-                                <p>Rescheduled</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="stat-card pending">
-                            <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                            <div class="stat-details">
-                                <h3 id="pendingCount">0</h3>
-                                <p>Pending</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="stat-card feedback-pending">
-                            <div class="stat-icon bg-info text-white rounded-circle"><i class="fas fa-star"></i></div>
-                            <div class="stat-details">
-                                <h3 id="feedbackPendingCount">0</h3>
-                                <p>Feedback Pending</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <section class="stats-summary hr-stats" aria-label="Historical statistics">
+                    <article class="stat-card completed">
+                        <div class="stat-icon"><i class="fas fa-check-circle text-primary"></i></div>
+                        <div class="stat-details"><h3 id="completedCount">0</h3><p>Completed</p></div>
+                    </article>
+                    <article class="stat-card approved">
+                        <div class="stat-icon"><i class="fas fa-thumbs-up text-success"></i></div>
+                        <div class="stat-details"><h3 id="approvedCount">0</h3><p>Approved</p></div>
+                    </article>
+                    <article class="stat-card rescheduled">
+                        <div class="stat-icon"><i class="fas fa-calendar-alt text-warning"></i></div>
+                        <div class="stat-details"><h3 id="rescheduledCount">0</h3><p>Rescheduled</p></div>
+                    </article>
+                    <article class="stat-card pending">
+                        <div class="stat-icon"><i class="fas fa-clock text-danger"></i></div>
+                        <div class="stat-details"><h3 id="pendingCount">0</h3><p>Pending</p></div>
+                    </article>
+                    <article class="stat-card feedback-pending">
+                        <div class="stat-icon"><i class="fas fa-star text-secondary"></i></div>
+                        <div class="stat-details"><h3 id="feedbackPendingCount">0</h3><p>InProgress</p></div>
+                    </article>
+                </section>
 
-                <!-- Charts -->
-                <div class="row charts-section">
+                <section class="rpt-panel">
+                <div class="row charts-section g-4">
                     <div class="col-md-8">
-                        <div class="chart-container trend-chart shadow rounded p-4 bg-white">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4 class="m-0">
-                                    <i class="fas fa-chart-line text-primary"></i>
-                                    <span class="ms-2 fw-bold">Appointment Trends</span>
-                                </h4>
-                            </div>
-                            <div class="chart-wrapper" style="height: 400px;">
+                        <div class="chart-container trend-chart rpt-chart-card">
+                            <header class="rpt-chart-head">
+                                <span class="rpt-chart-icon" aria-hidden="true"><i class="fas fa-chart-bar"></i></span>
+                                <div class="rpt-chart-titles">
+                                    <h4>Appointment Trends</h4>
+                                    <p class="rpt-chart-subtitle" id="trendChartSubtitle">Loading trends…</p>
+                                    <p class="rpt-chart-hint" id="trendChartHint">Each bar shows appointments by status for that time period.</p>
+                                </div>
+                            </header>
+                            <p class="rpt-chart-empty" id="trendChartEmpty" style="display:none;"><i class="fas fa-chart-bar me-2"></i>No appointment data for this period.</p>
+                            <div class="chart-wrapper">
                                 <canvas id="appointmentTrendChart"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="chart-container pie-chart">
-                            <h4><i class="fas fa-chart-pie"></i> Status Distribution</h4>
-                            <canvas id="statusPieChart"></canvas>
+                        <div class="chart-container pie-chart rpt-chart-card">
+                            <header class="rpt-chart-head">
+                                <span class="rpt-chart-icon rpt-chart-icon--pie" aria-hidden="true"><i class="fas fa-bars-staggered"></i></span>
+                                <div class="rpt-chart-titles">
+                                    <h4>Status Breakdown</h4>
+                                    <p class="rpt-chart-subtitle">Count by appointment status</p>
+                                </div>
+                            </header>
+                            <div class="chart-wrapper chart-wrapper--status">
+                                <canvas id="statusPieChart"></canvas>
+                            </div>
+                            <div class="rpt-status-breakdown" id="statusChartBreakdown" aria-live="polite"></div>
                         </div>
                     </div>
                 </div>
+                </section>
+            </div>
             </div>
         </main>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="<?= base_url('js/counselor/report_charts_theme.js') ?>?v=3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= base_url('js/admin/admin_drawer.js') ?>"></script>
-    <script src="<?= base_url('js/admin/history_reports.js') ?>"></script>
+    <script src="<?= base_url('js/admin/profile_sync.js') ?>"></script>
+    <script src="<?= base_url('js/admin/history_reports.js') ?>?v=3"></script>
     <script src="<?= base_url('js/admin/logout.js') ?>" defer></script>
     <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
     <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>

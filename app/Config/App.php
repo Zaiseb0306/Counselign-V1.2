@@ -16,7 +16,7 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = 'http://10.65.77.105/Counselign/public/';
+    public string $baseURL = 'http://localhost:8080/';
 
     /**
      * Get dynamic base URL based on current request
@@ -27,13 +27,8 @@ class App extends BaseConfig
         $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
         $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
         
-        // Handle different scenarios
-        if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
-            return $protocol . '://' . $host . '/Counselign/public/';
-        } else {
-            // For IP addresses or other hosts, construct the URL
-            return $protocol . '://' . $host . '/Counselign/public/';
-        }
+        // Return the base URL without any extra path
+        return $protocol . '://' . $host . '/';
     }
 
     /**

@@ -3,6 +3,60 @@
 let currentDate = new Date();
 let events = [];
 let announcements = [];
+let rawAnnouncements = [];
+let rawEvents = [];
+
+function setAnnStat(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function updateAnnStats(announcementsList, eventsList) {
+    const anns = announcementsList || [];
+    const evts = (eventsList || []).filter(e => e.type === 'event' || !e.type);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const month = today.getMonth();
+    const year = today.getFullYear();
+
+    const upcoming = evts.filter(ev => {
+        if (!ev.date) return false;
+        const d = new Date(ev.date);
+        d.setHours(0, 0, 0, 0);
+        return d >= today;
+    });
+
+    const thisMonth = evts.filter(ev => {
+        if (!ev.date) return false;
+        const d = new Date(ev.date);
+        return d.getMonth() === month && d.getFullYear() === year;
+    });
+
+    setAnnStat('statAnnouncementsCount', anns.length);
+    setAnnStat('statEventsCount', evts.length);
+    setAnnStat('statUpcomingCount', upcoming.length);
+    setAnnStat('statMonthEventsCount', thisMonth.length);
+}
+
+function showAnnAnnouncementsLoading(show) {
+    const loader = document.getElementById('annAnnouncementsLoading');
+    const scroll = document.querySelector('.ann-announcements-panel .ann-scroll');
+    const empty = document.getElementById('noAnnouncements');
+    if (loader) loader.style.display = show ? 'block' : 'none';
+    if (show && scroll) scroll.style.display = 'none';
+    if (show && empty) empty.style.display = 'none';
+}
+
+function showAnnEventsLoading(show) {
+    const loader = document.getElementById('annEventsLoading');
+    const scroll = document.querySelector('.ann-events-panel .ann-scroll');
+    const empty = document.getElementById('noEvents');
+    if (loader) loader.style.display = show ? 'block' : 'none';
+    if (show && scroll) scroll.style.display = 'none';
+    if (show && empty) empty.style.display = 'none';
+}
+
+
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
@@ -178,26 +232,30 @@ function setupCalendarNavigation() {
 
 // Load announcements
 async function loadAnnouncements() {
+    showAnnAnnouncementsLoading(true);
     try {
         const response = await fetch(window.BASE_URL + 'counselor/announcements/all');
         const data = await response.json();
         
         if (data.status === 'success' && data.announcements) {
+            rawAnnouncements = data.announcements;
+            showAnnAnnouncementsLoading(false);
             displayAnnouncements(data.announcements);
-            // Update announcements array for calendar
             announcements = data.announcements.map(announcement => ({
                 title: announcement.title,
                 date: announcement.created_at,
                 content: announcement.content,
                 type: 'announcement'
             }));
-            // Re-render calendar with announcements
+            updateAnnStats(rawAnnouncements, rawEvents.length ? rawEvents : events);
             renderCalendar();
         } else {
+            showAnnAnnouncementsLoading(false);
             console.error('Failed to load announcements:', data.message);
             showErrorMessage('Failed to load announcements');
         }
     } catch (error) {
+        showAnnAnnouncementsLoading(false);
         console.error('Error loading announcements:', error);
         showErrorMessage('Error loading announcements');
     }
@@ -205,28 +263,33 @@ async function loadAnnouncements() {
 
 // Load events
 async function loadEvents() {
+    showAnnEventsLoading(true);
     try {
         const response = await fetch(window.BASE_URL + 'counselor/events/all');
         const data = await response.json();
         
         if (data.status === 'success' && data.events) {
+            rawEvents = data.events;
+            showAnnEventsLoading(false);
             displayEvents(data.events);
-            // Update events array for calendar
             events = data.events.map(event => ({
                 title: event.title,
                 date: event.date,
                 time: event.time,
                 description: event.description,
+                location: event.location,
                 type: 'event'
             }));
-            // Re-render calendar with events
+            updateAnnStats(rawAnnouncements, rawEvents);
             renderCalendar();
-                } else {
+        } else {
+            showAnnEventsLoading(false);
             console.error('Failed to load events:', data.message);
             showErrorMessage('Failed to load events');
-                }
+        }
     } catch (error) {
-                console.error('Error loading events:', error);
+        showAnnEventsLoading(false);
+        console.error('Error loading events:', error);
         showErrorMessage('Error loading events');
     }
 }
@@ -234,12 +297,19 @@ async function loadEvents() {
 // Display announcements
 function displayAnnouncements(announcements) {
     const announcementsList = document.getElementById('announcementsList');
+    const noAnnouncements = document.getElementById('noAnnouncements');
+    const scroll = document.querySelector('.ann-announcements-panel .ann-scroll');
     if (!announcementsList) return;
-    
+
     if (announcements.length === 0) {
-        announcementsList.innerHTML = '<div class="no-content">No announcements available</div>';
+        announcementsList.innerHTML = '';
+        if (scroll) scroll.style.display = 'none';
+        if (noAnnouncements) noAnnouncements.style.display = 'block';
         return;
     }
+
+    if (scroll) scroll.style.display = '';
+    if (noAnnouncements) noAnnouncements.style.display = 'none';
 
     announcementsList.innerHTML = announcements.map((announcement, index) => {
         // Parse date for badge
@@ -275,12 +345,19 @@ function displayAnnouncements(announcements) {
 // Display events
 function displayEvents(events) {
     const eventsList = document.getElementById('eventsList');
+    const noEvents = document.getElementById('noEvents');
+    const scroll = document.querySelector('.ann-events-panel .ann-scroll');
     if (!eventsList) return;
-    
+
     if (events.length === 0) {
-        eventsList.innerHTML = '<div class="no-content">No events scheduled</div>';
+        eventsList.innerHTML = '';
+        if (scroll) scroll.style.display = 'none';
+        if (noEvents) noEvents.style.display = 'block';
         return;
     }
+
+    if (scroll) scroll.style.display = '';
+    if (noEvents) noEvents.style.display = 'none';
 
     eventsList.innerHTML = events.map((event, index) => {
         // Parse date for badge
@@ -350,14 +427,15 @@ function showDateDetails(clickedDate, events, announcements) {
     const inlineMaxWidth = itemsCount <= 1 ? 'max-width: 600px;' : (itemsCount <= 3 ? 'max-width: 900px;' : 'max-width: 1140px;');
     // Create modal HTML
     const modalHTML = `
-        <div class="modal fade" id="dateDetailsModal" tabindex="-1" aria-labelledby="dateDetailsModalLabel" aria-hidden="true">
+        <div class="modal fade appt-vibe-modal" id="dateDetailsModal" tabindex="-1" aria-labelledby="dateDetailsModalLabel" aria-hidden="true">
             <div class="modal-dialog ${sizeClass} modal-dialog-centered" style="${inlineMaxWidth}">
-                <div class="modal-content">
-                        <div class="modal-header">
+                <div class="modal-content appointment-modal-content">
+                        <div class="modal-header appointment-modal-header">
                         <h5 class="modal-title" id="dateDetailsModalLabel">
                             <i class="fas fa-calendar-day me-2"></i>
                             ${formatDateForDisplay(clickedDate)}
                         </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         ${generateDateDetailsContent(events, announcements)}

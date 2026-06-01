@@ -1,0 +1,9 @@
+# Terminal 1 — Flask
+cd flask_middleware
+python app.py
+
+# Terminal 2 — Flask tunnel (new random URL each run)
+cloudflared tunnel --url http://127.0.0.1:5000
+
+# Terminal 3 — CodeIgniter UI (optional second tunnel)
+cloudflared tunnel --url http://127.0.0.1:80

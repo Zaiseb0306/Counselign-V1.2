@@ -1,0 +1,503 @@
+/* Shared vibe tokens (matches appointments page) */
+:root {
+    --appt-navy: #060E57;
+    --appt-navy-soft: #0a1a7a;
+    --appt-surface: #ffffff;
+    --appt-muted: #64748b;
+    --appt-border: rgba(6, 14, 87, 0.08);
+    --appt-glow: rgba(6, 14, 87, 0.12);
+    --appt-radius: 14px;
+    --appt-radius-sm: 10px;
+    --appt-font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --appt-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --status-pending: #ffc107;
+    --status-feedback: #6c757d;
+}
+
+body.pf-page-body {
+    background-color: #eef1f8;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(6, 14, 87, 0.07), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(13, 110, 253, 0.06), transparent),
+        linear-gradient(180deg, #f4f6fc 0%, #eef1f8 100%);
+    font-family: var(--appt-font);
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.pf-page main {
+    flex: 1;
+    padding: 0;
+}
+
+.pf-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.appt-hero {
+    margin: 1.25rem 0 1.25rem;
+    padding: 1.5rem 1.75rem;
+    background: var(--appt-surface);
+    border: 1px solid var(--appt-border);
+    border-radius: var(--appt-radius);
+    box-shadow: 0 4px 24px var(--appt-glow);
+    position: relative;
+    overflow: hidden;
+}
+
+.appt-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--appt-navy), #3b82f6, #8b5cf6);
+}
+
+.appt-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--appt-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    color: var(--appt-muted);
+    background: #f1f5f9;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+}
+
+.appt-eyebrow i {
+    color: var(--appt-navy);
+    font-size: 0.7rem;
+}
+
+.appt-hero .page-title {
+    color: var(--appt-navy);
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.35rem;
+}
+
+.appt-hero-sub {
+    margin: 0;
+    color: var(--appt-muted);
+    font-size: 0.95rem;
+    max-width: 42rem;
+}
+
+/* Single stat card row */
+.pf-stats.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    max-width: 320px;
+}
+
+.stat-card {
+    background: var(--appt-surface);
+    border-radius: var(--appt-radius-sm);
+    padding: 1rem 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--appt-border);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--appt-glow);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+}
+
+.stat-details h3 {
+    font-family: var(--appt-mono);
+    font-size: 1.65rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.stat-details p {
+    margin: 0.2rem 0 0;
+    color: var(--appt-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stat-card.feedback-pending .stat-icon {
+    background-color: #f1f3f5;
+    color: #6c757d;
+}
+
+.stat-card.feedback-pending .stat-details h3 {
+    color: #6c757d;
+}
+
+/* Panel */
+.pf-panel {
+    background: var(--appt-surface);
+    border-radius: var(--appt-radius);
+    border: 1px solid var(--appt-border);
+    box-shadow: 0 4px 28px var(--appt-glow);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.pf-panel-header {
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(180deg, #fafbfd 0%, #f4f6fa 100%);
+    border-bottom: 1px solid var(--appt-border);
+}
+
+.pf-panel-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--appt-navy);
+    text-align: left;
+}
+
+.pf-panel-header p {
+    margin: 0.35rem 0 0;
+    font-size: 0.82rem;
+    color: var(--appt-muted);
+    font-family: var(--appt-mono);
+}
+
+.pf-table-wrap {
+    padding: 0 1rem 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pf-table {
+    width: 100%;
+    min-width: 1100px;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+}
+
+.pf-table thead {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, var(--appt-navy-soft) 100%);
+}
+
+.pf-table thead th {
+    color: #fff !important;
+    background: transparent !important;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.85rem 1rem;
+    white-space: nowrap;
+    border: none;
+}
+
+.pf-table thead th:first-child {
+    border-radius: 8px 0 0 0;
+}
+
+.pf-table thead th:last-child {
+    border-radius: 0 8px 0 0;
+}
+
+.pf-table tbody td {
+    color: #1e293b !important;
+    padding: 0.9rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #eef2f7;
+    background: #fff;
+}
+
+.pf-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.pf-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.pf-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.pf-table .badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+    border-radius: 6px;
+}
+
+.pf-btn-view {
+    background: #f1f5f9;
+    border: 1px solid rgba(6, 14, 87, 0.15);
+    color: var(--appt-navy);
+    border-radius: 8px;
+    padding: 0.35rem 0.65rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.pf-btn-view:hover {
+    background: var(--appt-navy);
+    color: #fff;
+    border-color: var(--appt-navy);
+}
+
+.pf-btn-remind {
+    background: var(--appt-navy);
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+    pointer-events: auto !important;
+}
+
+.pf-btn-remind:hover:not(:disabled) {
+    background: var(--appt-navy-soft);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--appt-glow);
+    color: #fff;
+}
+
+.pf-btn-remind:disabled {
+    opacity: 0.7;
+}
+
+/* Loading & empty */
+.appt-state {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+}
+
+.appt-loading p,
+.appt-empty h4 {
+    color: var(--appt-muted);
+    margin-top: 1rem;
+}
+
+.appt-loader {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+}
+
+.appt-loader span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--appt-navy);
+    animation: pfBounce 1.2s ease-in-out infinite;
+}
+
+.appt-loader span:nth-child(2) { animation-delay: 0.15s; }
+.appt-loader span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes pfBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+.appt-empty-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: #94a3b8;
+}
+
+.appt-empty {
+    padding: 3rem 1.5rem 2.5rem;
+}
+
+.appt-empty h4 {
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.5rem;
+}
+
+.appt-empty p {
+    color: var(--appt-muted);
+    margin: 0;
+}
+
+/* Modals — match appointments */
+.appt-vibe-modal .modal-content,
+.appointment-modal-content {
+    border: none;
+    border-radius: var(--appt-radius);
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(6, 14, 87, 0.2);
+}
+
+.appointment-modal-header {
+    background: linear-gradient(135deg, var(--appt-navy) 0%, var(--appt-navy-soft) 100%);
+    color: white;
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.appointment-modal-header .modal-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.appointment-modal-header .btn-close {
+    filter: invert(1);
+    opacity: 0.85;
+}
+
+.appointment-modal-body {
+    padding: 1.25rem 1.5rem;
+    background: #fafbfc;
+}
+
+.pf-modal-field {
+    margin-bottom: 1.25rem;
+}
+
+.pf-modal-field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--appt-muted);
+    margin-bottom: 0.35rem;
+}
+
+.pf-modal-field .pf-modal-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.pf-remarks-box {
+    background: #fff;
+    border: 1px solid var(--appt-border);
+    border-left: 4px solid var(--appt-navy);
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #475569;
+    white-space: pre-wrap;
+}
+
+.appointment-modal-footer {
+    background: #f8f9fa;
+    border-top: 1px solid var(--appt-border);
+    padding: 0.875rem 1.5rem;
+}
+
+.success-modal-header {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%) !important;
+}
+
+.success-modal-header .modal-title,
+.success-modal-header .btn-close {
+    color: #fff;
+}
+
+.success-modal-header .btn-close {
+    filter: invert(1);
+}
+
+.pf-success-body {
+    padding: 2.5rem 2rem !important;
+    text-align: center;
+}
+
+.pf-success-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--appt-navy), var(--appt-navy-soft));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #fff;
+}
+
+.pf-success-body h4 {
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+}
+
+.pf-success-body p {
+    color: var(--appt-muted);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.pf-btn-ok {
+    background: var(--appt-navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 2rem;
+    font-weight: 600;
+}
+
+.pf-btn-ok:hover {
+    background: var(--appt-navy-soft);
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .appt-hero {
+        padding: 1.15rem;
+    }
+
+    .appt-hero .page-title {
+        font-size: 1.35rem;
+    }
+
+    .pf-stats.stats-summary {
+        max-width: 100%;
+    }
+}

@@ -32,18 +32,43 @@ function scheduleAppointment() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Initialize sticky header
-    initStickyHeader();
-
-    // Load completed appointments
-    loadCompletedAppointments();
-
-    // Setup modal event listeners
     setupModalEventListeners();
+    initializeSearch();
+    loadCompletedAppointments();
 });
+
+function setFuStat(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function updateFollowUpStats(appointments) {
+    const list = appointments || [];
+    setFuStat('statCompletedCount', list.length);
+    setFuStat(
+        'statWithFollowUpCount',
+        list.filter((a) => (parseInt(a.follow_up_count, 10) || 0) > 0).length
+    );
+    setFuStat(
+        'statPendingCount',
+        list.filter((a) => (parseInt(a.pending_follow_up_count, 10) || 0) > 0).length
+    );
+    setFuStat(
+        'statTotalFollowUpCount',
+        list.reduce((sum, a) => sum + (parseInt(a.follow_up_count, 10) || 0), 0)
+    );
+}
+
+function showFuLoading(show) {
+    const loader = document.getElementById('fuLoading');
+    const container = document.getElementById('completedAppointmentsContainer');
+    if (loader) loader.style.display = show ? 'block' : 'none';
+    if (show && container) container.style.display = 'none';
+}
 
 // Load all completed appointments (admin view - no counselor filtering)
 async function loadCompletedAppointments(searchTerm = '') {
+    showFuLoading(true);
     try {
         let url = (window.BASE_URL || '/') + 'admin/follow-up-sessions/completed-appointments';
         if (searchTerm) {
@@ -66,11 +91,14 @@ async function loadCompletedAppointments(searchTerm = '') {
         const data = await response.json();
         
         if (data.status === 'success') {
+            showFuLoading(false);
             displayCompletedAppointments(data.appointments, data.search_term);
         } else {
+            showFuLoading(false);
             showError(data.message || 'Failed to load completed appointments');
         }
     } catch (error) {
+        showFuLoading(false);
         console.error('Error loading completed appointments:', error);
         showError('Error loading completed appointments: ' + error.message);
     }
@@ -83,6 +111,8 @@ function displayCompletedAppointments(appointments, searchTerm = '') {
     const noSearchResults = document.getElementById('noSearchResults');
 
     if (!container) return;
+
+    updateFollowUpStats(appointments);
 
     if (appointments.length === 0) {
         container.style.display = 'none';
@@ -100,16 +130,21 @@ function displayCompletedAppointments(appointments, searchTerm = '') {
     noDataMessage.style.display = 'none';
     noSearchResults.style.display = 'none';
 
-    container.innerHTML = appointments.map(appointment => `
-        <div class="appointment-card">
+    container.innerHTML = appointments.map(appointment => {
+        const pending = parseInt(appointment.pending_follow_up_count, 10) || 0;
+        const studentName = appointment.student_name || 'Unknown Student';
+        const counselorName = appointment.counselor_name || 'Not assigned';
+        const consultType = appointment.consultation_type || appointment.method_type || '—';
+        return `
+        <div class="appointment-card fu-appointment-card status-completed">
             <div class="appointment-header">
-                <div class="appointment-status">${appointment.status}</div>
+                <div class="appointment-status status-completed">${appointment.status}</div>
                 <div class="header-indicators">
                     <div class="follow-up-count">
                         <i class="fas fa-calendar-plus"></i>
                         Follow-ups: ${appointment.follow_up_count || 0}
                     </div>
-                    ${appointment.pending_follow_up_count > 0 ? `
+                    ${pending > 0 ? `
                     <div class="pending-follow-up-indicator">
                         <i class="fas fa-exclamation-triangle"></i>
                         Pending
@@ -118,8 +153,9 @@ function displayCompletedAppointments(appointments, searchTerm = '') {
                 </div>
             </div>
             <div class="appointment-student">
-                <div class="student-name">${appointment.student_name || 'Unknown Student'}</div>
+                <div class="student-name">${studentName}</div>
                 <div class="student-id">Student ID: ${appointment.student_id}</div>
+                <div class="student-id">Counselor: ${counselorName}</div>
             </div>
             <div class="appointment-details">
                 <div class="appointment-date">
@@ -132,7 +168,7 @@ function displayCompletedAppointments(appointments, searchTerm = '') {
                 </div>
                 <div class="appointment-type">
                     <i class="fas fa-comments"></i>
-                    <span>${appointment.consultation_type}</span>
+                    <span>${consultType}</span>
                 </div>
                 ${appointment.purpose ? `
                 <div class="appointment-purpose">
@@ -140,19 +176,14 @@ function displayCompletedAppointments(appointments, searchTerm = '') {
                     <span>${appointment.purpose}</span>
                 </div>
                 ` : ''}
-                ${appointment.counselor_name ? `
-                <div class="appointment-counselor">
-                    <i class="fas fa-user-md"></i>
-                    <span>${appointment.counselor_name}</span>
-                </div>
-                ` : ''}
             </div>
-            <button class="follow-up-btn" onclick="openFollowUpSessionsModal(${appointment.id}, '${appointment.student_id}')">
+            <button type="button" class="follow-up-btn" onclick="openFollowUpSessionsModal(${appointment.id}, '${appointment.student_id}')">
                 <i class="fas fa-calendar-days"></i>
-                View Follow-up Sessions
+                Follow-up Sessions
             </button>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // Open follow-up sessions modal
@@ -248,12 +279,6 @@ function displayFollowUpSessions(sessions) {
     `).join('');
 }
 
-// Setup modal event listeners (minimal for admin view)
-function setupModalEventListeners() {
-    // No action buttons to setup for admin view
-    // This function is kept for consistency with counselor version
-}
-
 // Utility functions
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -292,25 +317,8 @@ function showSuccess(message) {
     }
 }
 
-// Make header sticky on scroll - improved version
-function initStickyHeader() {
-    const header = document.querySelector('header');
-
-    if (header) {
-        // Set header as sticky right from the start
-        header.classList.add("sticky-header");
-
-        window.onscroll = function () {
-            // Just update the shadow effect based on scroll position
-            if (window.pageYOffset > 10) {
-                header.classList.add("sticky-header");
-            } else {
-                header.classList.remove("sticky-header");
-            }
-        };
-    }
-
-    // Robust modal stacking/cleanup to keep page responsive after multiple modals
+// Modal stacking / cleanup (fixed top bar — no sticky header scroll handler)
+function setupModalEventListeners() {
     document.addEventListener('hidden.bs.modal', function () {
         const openModals = document.querySelectorAll('.modal.show');
         if (openModals.length === 0) {
@@ -378,7 +386,3 @@ function initializeSearch() {
     }
 }
 
-// Initialize search when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    initializeSearch();
-});

@@ -8,11 +8,19 @@ use App\Controllers\BaseController;
 use App\Helpers\UserActivityHelper;
 use App\Models\CounselorAvailabilityModel;
 use App\Models\NotificationsModel;
+use App\Services\AppointmentService;
 use CodeIgniter\API\ResponseTrait;
 
 class Appointments extends BaseController
 {
     use ResponseTrait;
+
+    protected AppointmentService $appointmentService;
+
+    public function __construct()
+    {
+        $this->appointmentService = new AppointmentService();
+    }
 
     public function index()
     {
@@ -51,16 +59,47 @@ class Appointments extends BaseController
                     CONCAT(sai.course, ' - ', sai.year_level) as course_year,
                     sai.course,
                     sai.year_level,
-                    COALESCE(c.name, 'No Preference') as counselor_name
+                    COALESCE(c.name, 'No Preference') as counselor_name,
+                    CASE
+                        WHEN LOWER(COALESCE(a.status, '')) IN ('completed', 'feedback_pending')
+                             AND (
+                                 LOWER(COALESCE(sf.status, '')) <> 'submitted'
+                                 OR LOWER(COALESCE(a.student_feedback_status, '')) = 'pending_feedback'
+                             )
+                        THEN 'feedback_pending'
+                        WHEN LOWER(COALESCE(a.status, '')) = 'feedback_pending'
+                             AND (
+                                 LOWER(COALESCE(sf.status, '')) = 'submitted'
+                                 OR LOWER(COALESCE(a.student_feedback_status, '')) = 'feedback submitted'
+                             )
+                        THEN 'completed'
+                        ELSE a.status
+                    END AS computed_status,
+                    CASE
+                        WHEN LOWER(COALESCE(sf.status, '')) = 'submitted'
+                             OR LOWER(COALESCE(a.student_feedback_status, '')) = 'feedback submitted'
+                        THEN 'submitted'
+                        ELSE 'pending'
+                    END AS feedback_status
                   FROM appointments a
                   LEFT JOIN users u ON a.student_id = u.user_id
                   LEFT JOIN student_personal_info spi ON spi.student_id = u.user_id
                   LEFT JOIN student_academic_info sai ON sai.student_id = u.user_id
+                  LEFT JOIN student_feedback sf ON sf.appointment_id = a.id
                   LEFT JOIN counselors c ON c.counselor_id = a.counselor_preference
                   WHERE a.counselor_preference = ? OR a.counselor_preference IS NULL OR a.counselor_preference = 'No preference'
                   ORDER BY a.created_at DESC";
 
         $appointments = $db->query($query, [$counselor_id])->getResultArray();
+
+        // Ensure frontend always receives the normalized status used by counters.
+        foreach ($appointments as &$appointment) {
+            if (!empty($appointment['computed_status'])) {
+                $appointment['status'] = $appointment['computed_status'];
+            }
+            unset($appointment['computed_status']);
+        }
+        unset($appointment);
         
         // Debug: log count
         log_message('debug', 'Appointments getAll - found: ' . count($appointments));
@@ -193,8 +232,13 @@ class Appointments extends BaseController
 
         $builder->update($updateData);
 
-        // Get the updated appointment data for email notification
-        $updatedAppointment = $builder->where('id', $appointment_id)->get()->getRowArray();
+        $finalStatus = $updateData['status'];
+
+        // Fresh read after update (do not reuse the update builder)
+        $updatedAppointment = $db->table('appointments')
+            ->where('id', $appointment_id)
+            ->get()
+            ->getRowArray();
 
         $emailSent = false;
         $notificationCreated = false;
@@ -231,7 +275,12 @@ class Appointments extends BaseController
             }
         }
 
-        return $this->response->setJSON(['status' => 'success', 'message' => $successMessage]);
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => $successMessage,
+            'appointment_id' => (int) $appointment_id,
+            'final_status' => $finalStatus,
+        ]);
     }
 
     /**
@@ -286,14 +335,14 @@ class Appointments extends BaseController
             'updated_at' => $this->getManilaDateTime()
         ];
 
-        $updated = $db->table('appointments')
-            ->where('id', $appointment_id)
-            ->update($updateData);
-
-        if ($updated === false) {
+        try {
+            // Use AppointmentService instead of direct database update
+            // This handles trigger validation logic (prevent_double_booking_update)
+            $this->appointmentService->updateAppointment($appointment_id, $updateData);
+        } catch (\Exception $e) {
             $db->transRollback();
-            log_message('error', 'Reschedule update failed for appointment ID: ' . $appointment_id);
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Failed to reschedule appointment']);
+            log_message('error', 'Reschedule update failed for appointment ID: ' . $appointment_id . ' - ' . $e->getMessage());
+            return $this->response->setJSON(['status' => 'error', 'message' => $e->getMessage()]);
         }
 
         try {
@@ -742,7 +791,8 @@ class Appointments extends BaseController
             return $this->respond([
                 'status' => 'success',
                 'appointments' => $merged
-            ]);
+            ])->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+              ->setHeader('Pragma', 'no-cache');
 
         } catch (\Exception $e) {
             log_message('error', '[Counselor\\Appointments::getScheduledAppointments] Error: ' . $e->getMessage());

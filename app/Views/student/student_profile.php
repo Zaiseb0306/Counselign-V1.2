@@ -12,14 +12,21 @@
     <meta http-equiv="Expires" content="0">
     <title>User Profile - Counselign</title>
     <link rel="icon" href="<?= base_url('Photos/counselign.ico') ?>" sizes="16x16 32x32" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="<?= base_url('css/student/student_profile.css') ?>" rel="stylesheet" />
+    <link rel="stylesheet" href="<?= base_url('css/shared/account_profile_vibe.css?v=1') ?>">
+    <link href="<?= base_url('css/student/student_profile.css?v=13') ?>" rel="stylesheet" />
+    <link rel="stylesheet" href="<?= base_url('css/student/student_notifications_dropdown.css?v=4') ?>">
     <link rel="stylesheet" href="<?= base_url('css/student/header.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/utils/sidebar.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/utils/vibe_topbar.css?v=3') ?>">
+
 </head>
 
-<body>
+<body class="sp-page-body acct-page-body">
     <!-- Sidebar -->
     <aside class="sidebar" id="uniSidebar">
         <div class="sidebar-content">
@@ -80,6 +87,8 @@
 
             <div class="top-bar-right">
 
+                <?= view('student/partials/header_actions') ?>
+
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown">
                     <button class="top-bar-btn profile-btn" id="profileDropdownBtn">
@@ -110,60 +119,129 @@
             </div>
         </header>
 
-        <main>
-            <div class="profile-container">
-                <div class="profile-header">
-                    <div class="profile-avatar">
-                        <img id="profile-img" src="<?= base_url('Photos/profile.png') ?>" alt="User Avatar" />
-                    </div>
-
-
-
-                    <!-- Enhanced form with title and better styling -->
-                    <div class="profile-form">
-                        <div class="user-name">Account ID:<span class="user-id" id="display-userid"></span></div>
-
-                        <div class="form-group">
-                            <label class="form-label">Username:</label>
-                            <div class="form-value" id="display-username"></div>
+        <main class="main-content">
+            <div class="acct-vibe-wrap">
+                <section class="acct-hero acct-vibe-panel">
+                    <div class="acct-hero-mesh" aria-hidden="true"></div>
+                    <div class="acct-hero-inner">
+                        <div class="acct-avatar-block">
+                            <div class="acct-avatar-ring">
+                                <img src="<?= base_url('Photos/profile.png') ?>" alt="Profile" class="acct-avatar" id="profile-avatar">
+                                <button type="button" class="acct-avatar-edit" onclick="updateProfilePicture()" title="Update photo">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Email:</label>
-                            <div class="form-value" id="display-email"></div>
-                        </div>
-
-                        <!-- Enhanced button group -->
-                        <div class="btn-group">
-                            <button class="btn btn-password" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                                <i class="fas fa-key"></i> Change Password
-                            </button>
-                            <button class="btn btn-update" data-bs-toggle="modal" data-bs-target="#updateProfileModal">
-                                <i class="fas fa-edit"></i> Update Profile
-                            </button>
+                        <div class="acct-hero-meta">
+                            <span class="acct-role-badge"><i class="fas fa-user-graduate me-1"></i> Student</span>
+                            <h2 class="acct-display-name" id="student-display-name">Loading...</h2>
+                            <p class="acct-hero-sub">Manage your account and personal data sheet</p>
+                            <div class="acct-id-chip">
+                                <span class="acct-id-label">Account ID</span>
+                                <span class="acct-id-value" id="display-userid">—</span>
+                            </div>
                         </div>
                     </div>
+                    <div class="acct-quick-stats">
+                        <div class="acct-stat-pill">
+                            <i class="fas fa-envelope"></i>
+                            <div>
+                                <span class="acct-stat-label">Email</span>
+                                <span class="acct-stat-value" id="student-email-preview">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="acct-stat-pill">
+                            <i class="fas fa-user"></i>
+                            <div>
+                                <span class="acct-stat-label">Username</span>
+                                <span class="acct-stat-value" id="student-username-preview">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="acct-panels">
+                    <section class="acct-panel acct-vibe-panel">
+                        <header class="acct-panel-head">
+                            <div class="acct-panel-icon"><i class="fas fa-id-card"></i></div>
+                            <div>
+                                <h3>Personal information</h3>
+                                <p>How you appear across the student portal</p>
+                            </div>
+                        </header>
+                        <div class="acct-fields">
+                            <div class="acct-field" data-field="email">
+                                <div class="acct-field-icon"><i class="fas fa-envelope"></i></div>
+                                <div class="acct-field-body">
+                                    <span class="acct-field-label">Email address</span>
+                                    <span class="acct-field-value" id="acct-email-value">Loading...</span>
+                                </div>
+                                <button type="button" class="acct-field-action" onclick="editField('email')" title="Edit email">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                            </div>
+                            <div class="acct-field" data-field="username">
+                                <div class="acct-field-icon"><i class="fas fa-user"></i></div>
+                                <div class="acct-field-body">
+                                    <span class="acct-field-label">Username</span>
+                                    <span class="acct-field-value" id="acct-username-value">Loading...</span>
+                                </div>
+                                <button type="button" class="acct-field-action" onclick="editField('username')" title="Edit username">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <span class="d-none form-value" id="display-username"></span>
+                        <span class="d-none form-value" id="display-email"></span>
+                    </section>
+
+                    <section class="acct-panel acct-vibe-panel">
+                        <header class="acct-panel-head">
+                            <div class="acct-panel-icon acct-panel-icon-security"><i class="fas fa-lock"></i></div>
+                            <div>
+                                <h3>Security</h3>
+                                <p>Keep your account protected with a strong password</p>
+                            </div>
+                        </header>
+                        <div class="acct-security-body">
+                            <div class="acct-security-copy">
+                                <i class="fas fa-key"></i>
+                                <p>Passwords are encrypted. Use a unique passphrase you do not share elsewhere.</p>
+                            </div>
+                            <button type="button" class="acct-btn acct-btn-primary" onclick="changePassword()">
+                                <i class="fas fa-lock me-2"></i>Change password
+                            </button>
+                        </div>
+                    </section>
                 </div>
 
-                <div class="profile-details">
-                    <div class="pds-header-row">
-                        <h4>Personal Data Sheet</h4>
-                        <div class="pds-actions">
-                            <button type="button" id="pdsEditToggleBtn" class="btn btn-secondary btn-compact" aria-pressed="false">
-                                <i class="fas fa-lock"></i> Enable Editing
-                            </button>
-                            <button type="button" id="pdsSaveBtn" class="btn btn-primary btn-compact" disabled>
-                                <i class="fas fa-save"></i> Save Changes
-                            </button>
-                            <a href="<?= base_url('student/pds/preview') ?>" target="_blank" rel="noopener" class="btn btn-outline-primary btn-compact">
-                                <i class="fas fa-file-pdf"></i> Preview / Print PDS
-                            </a>
-                        </div>
-                    </div>
-                    <!-- PDS CONTAINER (responsive + inner scrolling) -->
-                    <div class="pds-container card shadow-sm">
-                        <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <ul class="nav nav-tabs" role="tablist">
+                <section class="acct-panel acct-vibe-panel acct-panels--stacked acct-pds-wrap">
+                    <div class="pds-container card shadow-sm pds-vibe-card border-0">
+                        <div class="card-header border-0 p-0 pds-card-head-vibe">
+                            <div class="pds-toolbar">
+                                <div class="pds-toolbar-text">
+                                    <div class="pds-toolbar-heading">
+                                        <span class="pds-toolbar-badge" aria-hidden="true"><i class="fas fa-id-card"></i></span>
+                                        <div>
+                                            <h4 class="pds-toolbar-title mb-0">Personal Data Sheet</h4>
+                                            <p class="pds-toolbar-sub mb-0">Keep your details current for sessions and official records.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pds-toolbar-actions">
+                                    <button type="button" id="pdsEditToggleBtn" class="btn btn-secondary btn-compact" aria-pressed="false">
+                                        <i class="fas fa-lock"></i> Enable Editing
+                                    </button>
+                                    <button type="button" id="pdsSaveBtn" class="btn btn-primary btn-compact" disabled>
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                    <a href="<?= base_url('student/pds/preview') ?>" target="_blank" rel="noopener" class="btn btn-outline-primary btn-compact">
+                                        <i class="fas fa-file-pdf"></i> Preview PDF
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="pds-tabs-wrap">
+                                <ul class="nav nav-tabs pds-nav-tabs" role="tablist">
                                 <li class="nav-item">
                                     <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pds-personal-bg" type="button">
                                         <i class="fas fa-user me-2"></i> Personal
@@ -185,6 +263,7 @@
                                     </button>
                                 </li>
                             </ul>
+                            </div>
                         </div>
 
                         <div class="card-body p-0">
@@ -194,7 +273,7 @@
                                 <!-- TAB 1: PERSONAL BACKGROUND -->
                                 <!-- ================================================ -->
                                 <div class="tab-pane fade show active" id="pds-personal-bg">
-                                    <div class="row g-3">
+                                    <div class="row g-4 pds-form-grid">
                                         <!-- Academic Information -->
                                         <div class="col-12">
                                             <h6 class="text-primary mb-3"><i class="fas fa-graduation-cap me-2"></i>Academic Information</h6>
@@ -219,12 +298,7 @@
                                             </select>
                                         </div>
 
-                                        <div class="col-md-3">
-                                            <label class="form-label">Major or Strand</label>
-                                            <select class="form-select" id="majorOrStrandSelect">
-                                                <option value="">Select Major or Strand</option>
-                                            </select>
-                                        </div>
+                                        
 
                                         <div class="col-md-3">
                                             <label class="form-label">Grade/Year Level <span class="text-danger">*</span></label>
@@ -398,7 +472,7 @@
                                 <!-- TAB 2: FAMILY BACKGROUND -->
                                 <!-- ================================================ -->
                                 <div class="tab-pane fade" id="pds-family-bg">
-                                    <div class="row g-3">
+                                    <div class="row g-4 pds-form-grid">
                                         <!-- Father Information -->
                                         <div class="col-12">
                                             <h6 class="text-primary mb-3"><i class="fas fa-male me-2"></i>Father's Information</h6>
@@ -529,7 +603,7 @@
                                 <!-- TAB 3: OTHER INFORMATION -->
                                 <!-- ================================================ -->
                                 <div class="tab-pane fade" id="pds-other-info">
-                                    <div class="row g-3">
+                                    <div class="row g-4 pds-form-grid">
                                         <!-- Course Choice -->
                                         <div class="col-12">
                                             <h6 class="text-primary mb-3"><i class="fas fa-question-circle me-2"></i>Course Selection</h6>
@@ -894,7 +968,7 @@
                                 <!-- TAB 4: AWARDS AND RECOGNITION -->
                                 <!-- ================================================ -->
                                 <div class="tab-pane fade" id="pds-awards">
-                                    <div class="row g-3">
+                                    <div class="row g-4 pds-form-grid">
                                         <div class="col-12">
                                             <h6 class="text-primary mb-3"><i class="fas fa-trophy me-2"></i>Awards and Recognition</h6>
                                             <p class="text-muted small">List up to 3 awards or recognitions you have received</p>
@@ -972,89 +1046,9 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </main>
-    </div>
-
-    <!-- Update Profile Modal -->
-    <div class="modal fade" id="updateProfileModal" tabindex="-1" aria-labelledby="updateProfileModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="updateProfileModalLabel">Update Profile Information</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="updateProfileForm">
-                        <div class="mb-3">
-                            <label for="update-username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="update-username">
-                        </div>
-                        <div class="mb-3">
-                            <label for="update-email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="update-email">
-                        </div>
-                        <div class="mb-3">
-                            <label for="update-picture" class="form-label">Profile Picture</label>
-                            <input type="file" class="form-control" id="update-picture" accept="image/*">
-                            <div class="mt-2 text-center">
-                                <img id="update-picture-preview" src="<?= base_url('Photos/profile.png') ?>" alt="Preview" style="max-width:120px; max-height:120px; border-radius:50%; object-fit:cover; display:none;" />
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveProfileChanges()">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Change Password Modal -->
-    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="changePasswordModalLabel">
-                        Change Password
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="changePasswordForm">
-                        <div class="password-field mb-4">
-                            <label for="current-password" class="form-label">Current Password</label>
-                            <div class="password-input-group">
-                                <input type="password" class="form-control" id="current-password" required>
-                                <i class="fas fa-eye toggle-password" onclick="togglePassword('current-password')"></i>
-                            </div>
-                        </div>
-                        <div class="password-field mb-4">
-                            <label for="new-password" class="form-label">New Password</label>
-                            <div class="password-input-group">
-                                <input type="password" class="form-control" id="new-password" required>
-                                <i class="fas fa-eye toggle-password" onclick="togglePassword('new-password')"></i>
-                            </div>
-                        </div>
-                        <div class="password-field mb-4">
-                            <label for="confirm-password" class="form-label">Confirm New Password</label>
-                            <div class="password-input-group">
-                                <input type="password" class="form-control" id="confirm-password" required>
-                                <i class="fas fa-eye toggle-password" onclick="togglePassword('confirm-password')"></i>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="changePassword()">Save Changes</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- PWD Proof Preview Modal -->
@@ -1081,16 +1075,20 @@
         </div>
     </div>
 
+    <?= view('student/partials/notifications_dropdown') ?>
     <?php echo view('modals/student_dashboard_modals'); ?>
     <script src="<?= base_url('js/modals/student_dashboard_modals.js') ?>"></script>
-    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
-    <script src="<?= base_url('js/student/student_profile.js') ?>"></script>
-    <script src="<?= base_url('js/student/logout.js') ?>"></script>
-    <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.BASE_URL = "<?= base_url() ?>";
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= base_url('js/utils/secureLogger.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_profile.js?v=4') ?>"></script>
+    <script src="<?= base_url('js/shared/account_profile_actions.js?v=1') ?>"></script>
+    <script src="<?= base_url('js/student/logout.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_header_drawer.js') ?>"></script>
+    <script src="<?= base_url('js/student/student_notifications_dropdown.js?v=3') ?>"></script>
+    <script src="<?= base_url('js/utils/sidebar.js') ?>"></script>
 </body>
 
 </html>
